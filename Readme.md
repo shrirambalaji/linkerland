@@ -1,4 +1,4 @@
-# linkermapview
+# linkerland
 
 A simple tool to visualize linker map files. It has both a command line and a GUI interface written in Rust.
 
@@ -7,11 +7,11 @@ A simple tool to visualize linker map files. It has both a command line and a GU
 ### Command Line
 
 ```shell
-linkermapview <linker_map_file>
+linkerland <linker_map_file>
 ```
 
 ### GUI
 
 ```shell
-linkermapview --ui <linker_map_file>
+linkerland --ui <linker_map_file>
 ```
