@@ -5,11 +5,10 @@
 </picture>
 </div>
 
----
+<div align="center">
+  <strong>linkerland</strong> is a tool to parse and visualize linker map files generated with clang lld, GNU ld. 
+</div>
 
-## What is linkerland?
-
-**linkerland** is a tool to parse and visualize linker map files. linkerland is still work-in-progress.
 
 ## Usage
 
