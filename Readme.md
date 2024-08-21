@@ -5,9 +5,7 @@
 </picture>
 </div>
 
-<div align="center">
-  <strong>linkerland</strong> is a tool to parse and visualize linker map files generated with clang lld, GNU ld. 
-</div>
+<strong>linkerland</strong> is a tool to parse and visualize linker map files generated with clang lld, GNU ld. It's still _work in progress_.
 
 
 ## Usage
