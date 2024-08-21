@@ -1,6 +1,6 @@
 # How To
 
-1. Parse the linker.map file, which is a text file that contains the memory map of the program.
+1. Write a parser to parse the linker.map file. This varies with linker, and platform so we need a way to identify the linker used.
 
 2. The memory map has sections that are defined by the linker script. The sections are defined by the `SECTIONS` command in the linker script. The Symbol Table is in the "Symbols" section.
 
@@ -11,7 +11,6 @@
     - Name
 
 4. The symbols are mangled by default. So, we need to an optional way to demangle them specifically for Rust symbols.
-
 
 ## Open Questions
 
