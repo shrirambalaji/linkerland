@@ -1,13 +1,12 @@
-<picture style="padding: 20px;">
-  <source media="(prefers-color-scheme: dark)" srcset="./.github/images/logo-dark.png">
-  <img alt="linkerland logo in light" src="./.github/images/logo-light.png">
+<div align="center">
+<picture align="center" width="400px;">
+  <source media="(prefers-color-scheme: dark)" srcset="./.github/images/logo-dark.png" width="400px;">
+  <img alt="linkerland logo in light" src="./.github/images/logo-light.png" width="400px;">
 </picture>
+</div>
 
-<hr />
+<strong>linkerland</strong> is a tool to parse and visualize linker map files generated with clang lld, GNU ld. It's still _work in progress_.
 
-# linkerland
-
-A set of tools to parse and visualize linker map files.
 
 ## Usage
 
