@@ -1,13 +1,13 @@
-<picture style="padding: 20px;">
-  <source media="(prefers-color-scheme: dark)" srcset="./.github/images/logo-dark.png">
+<picture style="align-items: 'center';">
+  <source media="(prefers-color-scheme: dark)" srcset="./.github/images/logo-dark.png" width="500px;">
   <img alt="linkerland logo in light" src="./.github/images/logo-light.png">
 </picture>
 
-<hr />
+---
 
-# linkerland
+**linkerland** is a tool to parse and visualize linker map files. 
 
-A set of tools to parse and visualize linker map files.
+> linkerland is still *heavily* work-in-progress.
 
 ## Usage
 
