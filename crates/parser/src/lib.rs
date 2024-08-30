@@ -3,15 +3,12 @@
 use std::path::Path;
 use std::str;
 
-use winnow::ascii::{digit1, till_line_ending};
-use winnow::combinator::delimited;
-use winnow::error::{StrContext, StrContextValue};
-use winnow::PResult;
 use winnow::{
-    ascii::multispace0,
-    combinator::{preceded, repeat, terminated},
+    ascii::{digit1, multispace0, till_line_ending},
+    combinator::{delimited, preceded, repeat, terminated},
+    error::{StrContext, StrContextValue},
     token::literal,
-    Parser,
+    PResult, Parser,
 };
 
 #[derive(Debug)]
@@ -23,7 +20,6 @@ struct Symbol {
 }
 
 /// We are referring to every meaningful section in the linker map file as a block.
-
 #[derive(Debug)]
 enum BlockHeaders {
     Path,
@@ -44,23 +40,6 @@ impl BlockHeaders {
             BlockHeaders::Symbols => "# Symbols:",
         }
     }
-}
-
-// trait Parser {
-//     fn read_file(&mut self, map_file: &Path) -> String;
-//     fn parse(&mut self, contents: &str);
-//     fn parse_blocks(&mut self, contents: &str) -> IResult<&str, &str>;
-//     fn parse_block(&mut self, contents: &str, header: &str, until: &str) -> IResult<&str, &str>;
-// }
-
-// pub(crate) type Stream<'i> = &'i [u8];
-
-#[derive(Debug)]
-enum ParsedData {
-    Path(String),
-    Arch(String),
-    ObjectFiles(Vec<String>),
-    Symbols(Vec<Symbol>),
 }
 
 struct ObjectFile {
