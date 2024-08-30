@@ -104,9 +104,9 @@ fn target_path<'i>(input: &mut &'i str) -> PResult<&'i str> {
         preceded(spaces, till_line_ending),
     )
     .context(StrContext::Label("Path"))
-    .context(StrContext::Expected(
-        StrContextValue::Description("Expected a Path"),
-    ))
+    .context(StrContext::Expected(StrContextValue::Description(
+        "Expected a Path",
+    )))
     .parse_next(input)
 }
 
@@ -187,42 +187,28 @@ mod tests {
     fn test_target_path() {
         let mut input = "# Path: /target/debug/deps/sample-app";
         let result = target_path(&mut input);
-        match result {
-            Ok(data) => {
-                println!("Parsed data: {:?}", data);
-            }
-            Err(e) => {
-                panic!("Error parsing: {:?}", e);
-            }
-        }
+        assert_eq!(result.unwrap(), "/target/debug/deps/sample-app");
     }
 
     #[test]
     fn test_symbol_table_header() {
         let mut input = "# Address	Size    	File  Name";
         let result = symbol_table_header(&mut input);
-        match result {
-            Ok(data) => {
-                println!("Parsed data: {:?}", data);
-            }
-            Err(e) => {
-                panic!("Error parsing: {:?}", e);
-            }
-        }
+        assert_eq!(result.unwrap(), "Size    	File  Name");
     }
 
     #[test]
     fn test_symbol() {
         let mut input = r"0x10004C058	0x00000018	[  1] __ZN3std3sys3pal4unix17thread_local_dtor13register_dtor5DTORS17hf7230a0b661819a4E";
         let result = symbol(&mut input);
-        match result {
-            Ok(data) => {
-                println!("Parsed data: {:?}", data);
-            }
-            Err(e) => {
-                panic!("Error parsing: {:?}", e);
-            }
-        }
+        let symbol = result.unwrap();
+        assert_eq!(symbol.address, "0x10004C058");
+        assert_eq!(symbol.size, "0x00000018");
+        assert_eq!(symbol.file_index, "1");
+        assert_eq!(
+            symbol.name,
+            "__ZN3std3sys3pal4unix17thread_local_dtor13register_dtor5DTORS17hf7230a0b661819a4E"
+        );
     }
 
     #[ignore]
@@ -232,28 +218,6 @@ mod tests {
         # Address	Size    	File  Name
         0x10004C058	0x00000018	[  1] __ZN3std3sys3pal4unix17thread_local_dtor13register_dtor5DTORS17hf7230a0b661819a4E
         ";
-        let result = symbols(&mut input);
-        match result {
-            Ok(data) => {
-                println!("Parsed data: {:?}", data);
-            }
-            Err(e) => {
-                panic!("Error parsing: {:?}", e);
-            }
-        }
+        let _ = symbols(&mut input);
     }
-
-    // #[test]
-    // fn test_parser() {
-    //     let contents = read_file(Path::new("./fixtures/tiny_sample.map"));
-    //     let result = parse(&contents);
-    //     match result {
-    //         Ok((_, data)) => {
-    //             println!("Parsed data: {:?}", data);
-    //         }
-    //         Err(e) => {
-    //             panic!("Error parsing: {:?}", e);
-    //         }
-    //     }
-    // }
 }
