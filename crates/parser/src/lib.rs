@@ -2,15 +2,13 @@
 
 use std::path::Path;
 use std::str;
-use std::string::ParseError;
 
-use winnow::ascii::{alpha0, alphanumeric1, digit1, newline, till_line_ending};
+use winnow::ascii::{digit1, till_line_ending};
 use winnow::combinator::delimited;
-use winnow::error::{ContextError, ErrorKind, InputError, StrContext, StrContextValue};
+use winnow::error::{StrContext, StrContextValue};
 use winnow::PResult;
 use winnow::{
     ascii::multispace0,
-    ascii::multispace1,
     combinator::{preceded, repeat, terminated},
     token::literal,
     Parser,
@@ -83,7 +81,7 @@ fn spaces<'i>(input: &mut &'i str) -> PResult<&'i str> {
     multispace0(input)
 }
 
-fn object_files<'i>(input: &mut &'i str) -> PResult<Vec<ObjectFile>> {
+fn object_files(input: &mut &str) -> PResult<Vec<ObjectFile>> {
     let _ =
         terminated(literal(BlockHeaders::ObjectFiles.as_str()), multispace0).parse_next(input)?;
 
@@ -107,7 +105,7 @@ fn target_path<'i>(input: &mut &'i str) -> PResult<&'i str> {
     )
     .context(StrContext::Label("Path"))
     .context(StrContext::Expected(
-        (StrContextValue::Description(("Expected a Path"))),
+        StrContextValue::Description("Expected a Path"),
     ))
     .parse_next(input)
 }
@@ -129,7 +127,7 @@ fn hex_value<'i>(input: &mut &'i str) -> PResult<&'i str> {
     preceded("0x", winnow::ascii::hex_digit1).parse_next(input)
 }
 
-fn symbol<'i>(input: &mut &'i str) -> PResult<Symbol> {
+fn symbol(input: &mut &str) -> PResult<Symbol> {
     let address = preceded(spaces, hex_value).parse_next(input);
     let size = preceded(spaces, hex_value).parse_next(input);
     let file_index =
@@ -152,7 +150,7 @@ fn symbol<'i>(input: &mut &'i str) -> PResult<Symbol> {
     })
 }
 
-fn symbols<'i>(input: &mut &'i str) -> PResult<Vec<Symbol>> {
+fn symbols(input: &mut &str) -> PResult<Vec<Symbol>> {
     preceded(
         literal(BlockHeaders::Symbols.as_str()),
         preceded(
