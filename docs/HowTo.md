@@ -12,6 +12,21 @@
 
 4. The symbols are mangled by default. So, we need to an optional way to demangle them specifically for Rust symbols.
 
+
+### Parser
+
+1. Identify the system specific linker and have parser functions for each of them.
+2. Use nom to parse segments in the linker map. In Clang/LLD these segments are delimited by # like markdown headings.
+3. Each Segment is a chunk of text, and based on the title, the parse function returns a struct.
+    - for eg. the `Symbols` segment would return a list of SymbolTableEntry[]
+
+   > NOTE: Explicitly calling it a segment to avoid convoluting with the section keyword in linker map files.
+
+4. Once parsed, we need a way to index things to help search.
+
+### Visualizer
+
+### CLI
 ## Open Questions
 
 1. Should we use a custom parser or a library to parse the linker map file?
