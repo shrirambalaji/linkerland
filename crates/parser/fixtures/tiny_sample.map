@@ -1,0 +1,10 @@
+# Path: /target/debug/deps/sample-app
+# Arch: arm64
+# Object files:
+[ 66] /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/lib/system/libunwind.tbd
+# Sections:
+# Address	Size    	Segment	Section
+0x1000007DC	0x00036FC4	__TEXT	__text
+# Symbols:
+# Address	Size    	File  Name
+0x10004C058	0x00000018	[  1] __ZN3std3sys3pal4unix17thread_local_dtor13register_dtor5DTORS17hf7230a0b661819a4E

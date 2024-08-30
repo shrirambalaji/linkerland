@@ -3,4 +3,9 @@ name = "linkerland"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+# [dependencies]
+# mapfile_parser = "2.5.1"
+
+[workspace]
+resolver = "2"
+members = ["crates/parser"]
