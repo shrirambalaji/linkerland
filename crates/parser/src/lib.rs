@@ -4,8 +4,8 @@ use std::path::Path;
 use std::str;
 
 use winnow::{
-    ascii::{digit1, multispace0, till_line_ending},
-    combinator::{delimited, preceded, repeat, terminated},
+    ascii::{digit1, line_ending, multispace0, till_line_ending},
+    combinator::{alt, delimited, eof, opt, peek, preceded, repeat, repeat_till, terminated},
     error::{StrContext, StrContextValue},
     token::literal,
     PResult, Parser,
@@ -19,9 +19,8 @@ struct Symbol {
     name: String,
 }
 
-/// We are referring to every meaningful section in the linker map file as a block.
 #[derive(Debug)]
-enum BlockHeaders {
+enum MapFileHeaders {
     Path,
     Architecture,
     ObjectFiles,
@@ -30,18 +29,19 @@ enum BlockHeaders {
 }
 
 #[cfg(target_os = "macos")]
-impl BlockHeaders {
+impl MapFileHeaders {
     fn as_str(&self) -> &str {
         match self {
-            BlockHeaders::Path => "# Path:",
-            BlockHeaders::Architecture => "# Arch:",
-            BlockHeaders::ObjectFiles => "# Object files:",
-            BlockHeaders::Sections => "# Sections:",
-            BlockHeaders::Symbols => "# Symbols:",
+            MapFileHeaders::Path => "# Path:",
+            MapFileHeaders::Architecture => "# Arch:",
+            MapFileHeaders::ObjectFiles => "# Object files:",
+            MapFileHeaders::Sections => "# Sections:",
+            MapFileHeaders::Symbols => "# Symbols:",
         }
     }
 }
 
+#[derive(Debug)]
 struct ObjectFile {
     index: i32,
     path: String,
@@ -60,50 +60,39 @@ fn spaces<'i>(input: &mut &'i str) -> PResult<&'i str> {
     multispace0(input)
 }
 
-fn object_files(input: &mut &str) -> PResult<Vec<ObjectFile>> {
-    let _ =
-        terminated(literal(BlockHeaders::ObjectFiles.as_str()), multispace0).parse_next(input)?;
-
-    let mut object_files = Vec::new();
-    let index = delimited('[', preceded(spaces, winnow::ascii::digit1), ']').parse_next(input);
-
-    let path = preceded(spaces, winnow::ascii::alphanumeric1).parse_next(input);
-
-    object_files.push(ObjectFile {
-        index: index.unwrap().parse::<i32>().unwrap(),
-        path: path.unwrap().to_string(),
-    });
-
-    Ok(object_files)
-}
-
-fn target_path<'i>(input: &mut &'i str) -> PResult<&'i str> {
-    preceded(
-        literal(BlockHeaders::Path.as_str()),
-        preceded(spaces, till_line_ending),
-    )
-    .context(StrContext::Label("Path"))
-    .context(StrContext::Expected(StrContextValue::Description(
-        "Expected a Path",
-    )))
-    .parse_next(input)
-}
-
 fn arch<'i>(input: &mut &'i str) -> PResult<&'i str> {
     preceded(
-        literal(BlockHeaders::Architecture.as_str()),
+        literal(MapFileHeaders::Architecture.as_str()),
         preceded(spaces, till_line_ending),
     )
     .parse_next(input)
-}
-
-// TODO: fix this so that it returns the column headers
-fn symbol_table_header<'i>(input: &mut &'i str) -> PResult<&'i str> {
-    preceded(literal("# Address"), preceded(spaces, till_line_ending)).parse_next(input)
 }
 
 fn hex_value<'i>(input: &mut &'i str) -> PResult<&'i str> {
     preceded("0x", winnow::ascii::hex_digit1).parse_next(input)
+}
+
+fn object_file(input: &mut &str) -> PResult<ObjectFile> {
+    (
+        delimited('[', preceded(spaces, digit1), ']'),
+        preceded(spaces, till_line_ending),
+    )
+        .map(|(index, path)| ObjectFile {
+            index: index.parse().unwrap(),
+            path: path.to_string(),
+        })
+        .parse_next(input)
+}
+
+fn object_files(input: &mut &str) -> PResult<Vec<ObjectFile>> {
+    terminated(literal(MapFileHeaders::ObjectFiles.as_str()), line_ending).parse_next(input)?;
+    repeat_till(
+        0..,
+        object_file,
+        alt((peek(preceded(line_ending, literal("#"))), eof)),
+    )
+    .parse_next(input)
+    .map(|(object_files, _)| object_files)
 }
 
 fn symbol(input: &mut &str) -> PResult<Symbol> {
@@ -111,8 +100,7 @@ fn symbol(input: &mut &str) -> PResult<Symbol> {
     let size = preceded(spaces, hex_value).parse_next(input);
     let file_index =
         preceded(spaces, delimited('[', preceded(spaces, digit1), ']')).parse_next(input);
-
-    let name = preceded(spaces, winnow::ascii::till_line_ending).parse_next(input);
+    let name = preceded(spaces, till_line_ending).parse_next(input);
 
     // TODO: I don't like that we have to prepend "0x" to the address and size values
     let mut symbol_addr = address.unwrap().to_string();
@@ -121,25 +109,48 @@ fn symbol(input: &mut &str) -> PResult<Symbol> {
     let mut symbol_size = size.unwrap().to_string();
     symbol_size.insert_str(0, "0x");
 
-    Ok(Symbol {
+    let symbol = Symbol {
         address: symbol_addr,
         size: symbol_size,
         file_index: file_index.unwrap().to_string(),
         name: name.unwrap().to_string(),
-    })
+    };
+
+    Ok(symbol)
 }
 
 fn symbols(input: &mut &str) -> PResult<Vec<Symbol>> {
+    ((
+        opt(line_ending),
+        symbol,
+        repeat(0.., preceded(line_ending, symbol)).fold(Vec::new, |mut acc, item| {
+            acc.push(item);
+            acc
+        }),
+    ))
+        .parse_next(input)
+        .map(|(_, first, rest)| {
+            let mut symbols = vec![first];
+            symbols.extend(rest);
+            symbols
+        })
+}
+
+fn symbol_table<'i>(input: &mut &'i str) -> PResult<Vec<Symbol>> {
+    terminated(literal(MapFileHeaders::Symbols.as_str()), line_ending).parse_next(input)?;
+    terminated(till_line_ending, line_ending).parse_next(input)?;
+    symbols.parse_next(input)
+}
+
+fn target_path<'i>(input: &mut &'i str) -> PResult<&'i str> {
     preceded(
-        literal(BlockHeaders::Symbols.as_str()),
-        preceded(
-            symbol_table_header,
-            repeat(0.., symbol).fold(Vec::new, |mut acc, x| {
-                acc.push(x);
-                acc
-            }),
-        ),
+        literal(MapFileHeaders::Path.as_str()),
+        preceded(spaces, till_line_ending),
     )
+    .context(StrContext::Label("Path"))
+    .context(StrContext::Expected(StrContextValue::Description(
+        "Expected a Path",
+    )))
     .parse_next(input)
 }
 
@@ -163,17 +174,25 @@ mod tests {
     }
 
     #[test]
+    fn test_object_files() {
+        let mut input = r"# Object files:
+[ 66] /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/lib/system/libunwind.tbd";
+        let result = object_files(&mut input);
+        let object_files = result.unwrap();
+
+        assert_eq!(object_files.len(), 1);
+        assert_eq!(object_files[0].index, 66);
+        assert_eq!(
+            object_files[0].path,
+            "/Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/usr/lib/system/libunwind.tbd"
+        );
+    }
+
+    #[test]
     fn test_target_path() {
         let mut input = "# Path: /target/debug/deps/sample-app";
         let result = target_path(&mut input);
         assert_eq!(result.unwrap(), "/target/debug/deps/sample-app");
-    }
-
-    #[test]
-    fn test_symbol_table_header() {
-        let mut input = "# Address	Size    	File  Name";
-        let result = symbol_table_header(&mut input);
-        assert_eq!(result.unwrap(), "Size    	File  Name");
     }
 
     #[test]
@@ -190,13 +209,35 @@ mod tests {
         );
     }
 
-    #[ignore]
     #[test]
-    fn test_symbols() {
-        let mut input = r"# Symbols:
-        # Address	Size    	File  Name
+    fn test_single_symbol_row() {
+        let mut input = r"0x10004C058	0x00000018	[  1] __ZN3std3sys3pal4unix17thread_local_dtor13register_dtor5DTORS17hf7230a0b661819a4E";
+        let result = symbols(&mut input);
+        let symbols = result.unwrap();
+        assert_eq!(symbols.len(), 1);
+        assert_eq!(symbols[0].address, "0x10004C058");
+    }
+
+    #[test]
+    fn test_multiple_symbol_rows() {
+        let mut input = r"
         0x10004C058	0x00000018	[  1] __ZN3std3sys3pal4unix17thread_local_dtor13register_dtor5DTORS17hf7230a0b661819a4E
-        ";
-        let _ = symbols(&mut input);
+        0x10004C059	0x00000020	[  2] __ZN3std3sys3pal4unix17thread_local_dtor13register_dtor5DTORS17hf7230a0b661819a4E";
+        let result = symbols(&mut input);
+        let symbols = result.unwrap();
+        assert_eq!(symbols.len(), 2);
+        assert_eq!(symbols[0].address, "0x10004C058");
+        assert_eq!(symbols[1].address, "0x10004C059");
+    }
+
+    #[test]
+    fn test_symbol_table() {
+        let mut input = r"# Symbols:
+    # Address	Size    	File  Name
+    0x10004C058	0x00000018	[  1] __ZN3std3sys3pal4unix17thread_local_dtor13register_dtor5DTORS17hf7230a0b661819a4E";
+        let result = symbol_table(&mut input);
+        let symbols = result.unwrap();
+        assert_eq!(symbols.len(), 1);
+        assert_eq!(symbols[0].address, "0x10004C058");
     }
 }

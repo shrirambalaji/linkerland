@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-winnow = "0.6.18"
+winnow = { version = "0.6.18", features = ["debug"] }
