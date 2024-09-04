@@ -5,7 +5,7 @@ use std::str;
 
 use winnow::{
     ascii::{digit1, line_ending, multispace0, till_line_ending},
-    combinator::{alt, delimited, eof, opt, peek, preceded, repeat, repeat_till, terminated},
+    combinator::{alt, delimited, eof, opt, peek, preceded, repeat, repeat_till, terminated, todo},
     error::{StrContext, StrContextValue},
     token::literal,
     PResult, Parser,
@@ -93,6 +93,10 @@ fn object_files(input: &mut &str) -> PResult<Vec<ObjectFile>> {
     )
     .parse_next(input)
     .map(|(object_files, _)| object_files)
+}
+
+fn sections(input: &mut &str) -> PResult<()> {
+    todo(input)
 }
 
 fn symbol(input: &mut &str) -> PResult<Symbol> {
