@@ -4,8 +4,10 @@ use std::path::Path;
 use std::str;
 
 use winnow::{
-    ascii::{digit1, line_ending, multispace0, till_line_ending},
-    combinator::{alt, delimited, eof, opt, peek, preceded, repeat, repeat_till, terminated, todo},
+    ascii::{alpha1, digit1, line_ending, multispace0, till_line_ending},
+    combinator::{
+        alt, delimited, eof, opt, peek, preceded, repeat, repeat_till, separated, seq, terminated,
+    },
     error::{StrContext, StrContextValue},
     token::literal,
     PResult, Parser,
@@ -17,6 +19,14 @@ struct Symbol {
     size: String,
     file_index: String,
     name: String,
+}
+
+#[derive(Debug)]
+struct Section {
+    address: String,
+    size: String,
+    segment: String,
+    section: String,
 }
 
 #[derive(Debug)]
@@ -63,21 +73,23 @@ fn spaces<'i>(input: &mut &'i str) -> PResult<&'i str> {
 fn arch<'i>(input: &mut &'i str) -> PResult<&'i str> {
     preceded(
         literal(MapFileHeaders::Architecture.as_str()),
-        preceded(spaces, till_line_ending),
+        preceded(multispace0, till_line_ending),
     )
     .parse_next(input)
 }
 
 fn hex_value<'i>(input: &mut &'i str) -> PResult<&'i str> {
-    preceded("0x", winnow::ascii::hex_digit1).parse_next(input)
+    preceded("0x", winnow::ascii::hex_digit1)
+        .take()
+        .parse_next(input)
 }
 
 fn object_file(input: &mut &str) -> PResult<ObjectFile> {
     (
-        delimited('[', preceded(spaces, digit1), ']'),
-        preceded(spaces, till_line_ending),
+        delimited('[', preceded(multispace0, digit1), ']'),
+        preceded(multispace0, till_line_ending),
     )
-        .map(|(index, path)| ObjectFile {
+        .map(|(index, path): (&str, &str)| ObjectFile {
             index: index.parse().unwrap(),
             path: path.to_string(),
         })
@@ -95,23 +107,14 @@ fn object_files(input: &mut &str) -> PResult<Vec<ObjectFile>> {
     .map(|(object_files, _)| object_files)
 }
 
-fn sections(input: &mut &str) -> PResult<()> {
-    todo(input)
-}
-
 fn symbol(input: &mut &str) -> PResult<Symbol> {
-    let address = preceded(spaces, hex_value).parse_next(input);
-    let size = preceded(spaces, hex_value).parse_next(input);
+    let address = preceded(multispace0, hex_value).parse_next(input);
+    let size = preceded(multispace0, hex_value).parse_next(input);
     let file_index =
-        preceded(spaces, delimited('[', preceded(spaces, digit1), ']')).parse_next(input);
+        preceded(spaces, delimited('[', preceded(multispace0, digit1), ']')).parse_next(input);
     let name = preceded(spaces, till_line_ending).parse_next(input);
-
-    // TODO: I don't like that we have to prepend "0x" to the address and size values
-    let mut symbol_addr = address.unwrap().to_string();
-    symbol_addr.insert_str(0, "0x");
-
-    let mut symbol_size = size.unwrap().to_string();
-    symbol_size.insert_str(0, "0x");
+    let symbol_addr = address.unwrap().to_string();
+    let symbol_size = size.unwrap().to_string();
 
     let symbol = Symbol {
         address: symbol_addr,
@@ -124,14 +127,14 @@ fn symbol(input: &mut &str) -> PResult<Symbol> {
 }
 
 fn symbols(input: &mut &str) -> PResult<Vec<Symbol>> {
-    ((
+    (
         opt(line_ending),
         symbol,
         repeat(0.., preceded(line_ending, symbol)).fold(Vec::new, |mut acc, item| {
             acc.push(item);
             acc
         }),
-    ))
+    )
         .parse_next(input)
         .map(|(_, first, rest)| {
             let mut symbols = vec![first];
@@ -140,16 +143,44 @@ fn symbols(input: &mut &str) -> PResult<Vec<Symbol>> {
         })
 }
 
-fn symbol_table<'i>(input: &mut &'i str) -> PResult<Vec<Symbol>> {
+fn symbol_table(input: &mut &str) -> PResult<Vec<Symbol>> {
     terminated(literal(MapFileHeaders::Symbols.as_str()), line_ending).parse_next(input)?;
     terminated(till_line_ending, line_ending).parse_next(input)?;
     symbols.parse_next(input)
 }
 
+fn section(input: &mut &str) -> PResult<Section> {
+    let address = preceded(multispace0, hex_value).parse_next(input);
+    let size = preceded(multispace0, hex_value).parse_next(input);
+
+    let segment = seq!(_: spaces, preceded("__", alpha1).take(), _: spaces).parse_next(input);
+
+    let section = seq!(_: spaces, preceded("__", alpha1).take()).parse_next(input);
+
+    let section_info = Section {
+        address: address.unwrap().to_string(),
+        size: size.unwrap().to_string(),
+        segment: segment.unwrap().0.to_string(),
+        section: section.unwrap().0.to_string(),
+    };
+
+    Ok(section_info)
+}
+
+fn sections(input: &mut &str) -> PResult<Vec<Section>> {
+    separated(0.., section, line_ending).parse_next(input)
+}
+
+fn section_table(input: &mut &str) -> PResult<Vec<Section>> {
+    terminated(literal(MapFileHeaders::Sections.as_str()), line_ending).parse_next(input)?;
+    terminated(till_line_ending, line_ending).parse_next(input)?;
+    sections.parse_next(input)
+}
+
 fn target_path<'i>(input: &mut &'i str) -> PResult<&'i str> {
     preceded(
         literal(MapFileHeaders::Path.as_str()),
-        preceded(spaces, till_line_ending),
+        preceded(multispace0, till_line_ending),
     )
     .context(StrContext::Label("Path"))
     .context(StrContext::Expected(StrContextValue::Description(
@@ -167,14 +198,7 @@ mod tests {
     fn test_arch() {
         let mut input = "# Arch: x86_64";
         let result = arch(&mut input);
-        match result {
-            Ok(data) => {
-                println!("Parsed data: {:?}", data);
-            }
-            Err(e) => {
-                panic!("Error parsing: {:?}", e);
-            }
-        }
+        assert_eq!(result.unwrap(), "x86_64");
     }
 
     #[test]
@@ -243,5 +267,45 @@ mod tests {
         let symbols = result.unwrap();
         assert_eq!(symbols.len(), 1);
         assert_eq!(symbols[0].address, "0x10004C058");
+    }
+
+    #[test]
+    fn test_single_section_row() {
+        let mut input = r"0x10004C058	0x00000018	__TEXT	__text";
+        let result = section(&mut input);
+        let section = result.unwrap();
+        assert_eq!(section.address, "0x10004C058");
+        assert_eq!(section.size, "0x00000018");
+        assert_eq!(section.segment, "__TEXT");
+        assert_eq!(section.section, "__text");
+    }
+
+    #[test]
+    fn test_sections() {
+        let mut input = r"0x10004C058	0x00000018	__TEXT	__text
+        0x10004C059	0x00000020	__TEXT	__text";
+        let result = sections(&mut input);
+        let sections = result.unwrap();
+        assert_eq!(sections.len(), 2);
+        assert_eq!(sections[0].address, "0x10004C058");
+        assert_eq!(sections[0].section, "__text");
+        assert_eq!(sections[0].segment, "__TEXT");
+        assert_eq!(sections[1].address, "0x10004C059");
+        assert_eq!(sections[1].section, "__text");
+        assert_eq!(sections[1].segment, "__TEXT");
+    }
+
+    #[test]
+    fn test_section_table() {
+        let mut input = r"# Sections:
+        # Address	Size    	Segment Section
+        0x10004C058	0x00000018	__TEXT	__text";
+        let result = section_table(&mut input);
+        let sections = result.unwrap();
+        assert_eq!(sections.len(), 1);
+        assert_eq!(sections[0].address, "0x10004C058");
+        assert_eq!(sections[0].size, "0x00000018");
+        assert_eq!(sections[0].segment, "__TEXT");
+        assert_eq!(sections[0].section, "__text");
     }
 }
