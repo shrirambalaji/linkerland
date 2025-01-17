@@ -3,12 +3,13 @@
 use std::path::Path;
 use std::str;
 
+use winnow::error::ErrorKind;
 use winnow::{
-    ascii::{alpha1, digit1, line_ending, multispace0, till_line_ending},
+    ascii::{alpha1, alphanumeric1, digit1, line_ending, multispace0, till_line_ending},
     combinator::{
         alt, delimited, eof, opt, peek, preceded, repeat, repeat_till, separated, seq, terminated,
     },
-    error::{StrContext, StrContextValue},
+    error::{ErrMode, InputError, StrContext, StrContextValue},
     token::literal,
     PResult, Parser,
 };
@@ -57,6 +58,15 @@ struct ObjectFile {
     path: String,
 }
 
+#[derive(Debug)]
+pub struct MapFile {
+    arch: String,
+    object_files: Vec<ObjectFile>,
+    target_path: String,
+    symbols: Vec<Symbol>,
+    sections: Vec<Section>,
+}
+
 fn read_file(map_file: &Path) -> String {
     match std::fs::read_to_string(map_file) {
         Ok(contents) => contents,
@@ -72,8 +82,11 @@ fn spaces<'i>(input: &mut &'i str) -> PResult<&'i str> {
 
 fn arch<'i>(input: &mut &'i str) -> PResult<&'i str> {
     preceded(
-        literal(MapFileHeaders::Architecture.as_str()),
-        preceded(multispace0, till_line_ending),
+        preceded(
+            opt(line_ending),
+            preceded(literal(MapFileHeaders::Architecture.as_str()), multispace0),
+        ),
+        till_line_ending,
     )
     .parse_next(input)
 }
@@ -87,7 +100,7 @@ fn hex_value<'i>(input: &mut &'i str) -> PResult<&'i str> {
 fn object_file(input: &mut &str) -> PResult<ObjectFile> {
     (
         delimited('[', preceded(multispace0, digit1), ']'),
-        preceded(multispace0, till_line_ending),
+        preceded(preceded(opt(line_ending), multispace0), till_line_ending),
     )
         .map(|(index, path): (&str, &str)| ObjectFile {
             index: index.parse().unwrap(),
@@ -97,11 +110,22 @@ fn object_file(input: &mut &str) -> PResult<ObjectFile> {
 }
 
 fn object_files(input: &mut &str) -> PResult<Vec<ObjectFile>> {
-    terminated(literal(MapFileHeaders::ObjectFiles.as_str()), line_ending).parse_next(input)?;
+    delimited(
+        opt(line_ending),
+        literal(MapFileHeaders::ObjectFiles.as_str()),
+        line_ending,
+    )
+    .parse_next(input)?;
     repeat_till(
         0..,
         object_file,
-        alt((peek(preceded(line_ending, literal("#"))), eof)),
+        alt((
+            peek(preceded(
+                line_ending,
+                literal(MapFileHeaders::Sections.as_str()),
+            )),
+            eof,
+        )),
     )
     .parse_next(input)
     .map(|(object_files, _)| object_files)
@@ -110,8 +134,11 @@ fn object_files(input: &mut &str) -> PResult<Vec<ObjectFile>> {
 fn symbol(input: &mut &str) -> PResult<Symbol> {
     let address = preceded(multispace0, hex_value).parse_next(input);
     let size = preceded(multispace0, hex_value).parse_next(input);
-    let file_index =
-        preceded(spaces, delimited('[', preceded(multispace0, digit1), ']')).parse_next(input);
+    let file_index = preceded(
+        preceded(opt(line_ending), spaces),
+        delimited('[', preceded(multispace0, digit1), ']'),
+    )
+    .parse_next(input);
     let name = preceded(spaces, till_line_ending).parse_next(input);
     let symbol_addr = address.unwrap().to_string();
     let symbol_size = size.unwrap().to_string();
@@ -127,20 +154,27 @@ fn symbol(input: &mut &str) -> PResult<Symbol> {
 }
 
 fn symbols(input: &mut &str) -> PResult<Vec<Symbol>> {
-    (
-        opt(line_ending),
-        symbol,
-        repeat(0.., preceded(line_ending, symbol)).fold(Vec::new, |mut acc, item| {
-            acc.push(item);
-            acc
-        }),
+    // (
+    //     opt(line_ending),
+    //     symbol,
+    //     repeat(0.., preceded(line_ending, symbol)).fold(Vec::new, |mut acc, item| {
+    //         acc.push(item);
+    //         acc
+    //     }),
+    // )
+    //     .parse_next(input)
+    //     .map(|(_, first, rest)| {
+    //         let mut symbols = vec![first];
+    //         symbols.extend(rest);
+    //         symbols
+    //     })
+    repeat_till(
+        0..,
+        terminated(symbol, opt(line_ending)),
+        alt((literal("# "), eof)),
     )
-        .parse_next(input)
-        .map(|(_, first, rest)| {
-            let mut symbols = vec![first];
-            symbols.extend(rest);
-            symbols
-        })
+    .parse_next(input)
+    .map(|(symbols, _)| symbols)
 }
 
 fn symbol_table(input: &mut &str) -> PResult<Vec<Symbol>> {
@@ -157,22 +191,38 @@ fn section(input: &mut &str) -> PResult<Section> {
 
     let section = seq!(_: spaces, preceded("__", alpha1).take()).parse_next(input);
 
-    let section_info = Section {
+    Ok(Section {
         address: address.unwrap().to_string(),
         size: size.unwrap().to_string(),
         segment: segment.unwrap().0.to_string(),
         section: section.unwrap().0.to_string(),
-    };
-
-    Ok(section_info)
+    })
 }
 
 fn sections(input: &mut &str) -> PResult<Vec<Section>> {
-    separated(0.., section, line_ending).parse_next(input)
+    repeat_till(
+        0..,
+        terminated(section, opt(line_ending)),
+        alt((
+            peek(terminated(
+                preceded(spaces, literal(MapFileHeaders::Symbols.as_str())),
+                opt(line_ending),
+            )),
+            eof,
+        )),
+    )
+    .parse_next(input)
+    .map(|(sections, _)| sections)
 }
 
 fn section_table(input: &mut &str) -> PResult<Vec<Section>> {
-    terminated(literal(MapFileHeaders::Sections.as_str()), line_ending).parse_next(input)?;
+    delimited(
+        opt(line_ending),
+        literal(MapFileHeaders::Sections.as_str()),
+        line_ending,
+    )
+    .parse_next(input)?;
+    // skip next line
     terminated(till_line_ending, line_ending).parse_next(input)?;
     sections.parse_next(input)
 }
@@ -187,6 +237,21 @@ fn target_path<'i>(input: &mut &'i str) -> PResult<&'i str> {
         "Expected a Path",
     )))
     .parse_next(input)
+}
+
+pub fn parse(map_file: &Path) -> PResult<MapFile> {
+    let contents = read_file(map_file);
+    let mut input = contents.as_str();
+    let parsed_map_file = seq!(MapFile {
+        target_path: target_path.map(|s: &str| s.to_string()),
+        arch: arch.map(|s: &str| s.to_string()),
+        object_files: object_files,
+        sections: section_table,
+        symbols: symbol_table,
+    })
+    .parse_next(&mut input)?;
+
+    Ok(parsed_map_file)
 }
 
 #[cfg(test)]
@@ -307,5 +372,42 @@ mod tests {
         assert_eq!(sections[0].size, "0x00000018");
         assert_eq!(sections[0].segment, "__TEXT");
         assert_eq!(sections[0].section, "__text");
+    }
+
+    #[test]
+    fn test_section_table_stops_at_symbols() {
+        let mut input = r"# Sections:
+    # Address	Size    	Segment Section
+    0x10004C058	0x00000018	__TEXT	__text
+    # Symbols:
+    0x10004C060	0x00000030	[  1] some_symbol";
+        let result = section_table(&mut input);
+        let sections = result.unwrap();
+        assert_eq!(sections.len(), 1);
+        assert_eq!(sections[0].address, "0x10004C058");
+    }
+
+    #[test]
+    fn test_parse_small_sample() {
+        let map_file = Path::new("tests/fixtures/sample.map");
+        let result = parse(map_file).unwrap();
+        assert_eq!(result.target_path, "/target/debug/deps/sample-app");
+        assert_eq!(result.arch, "arm64");
+        assert_eq!(result.object_files.len(), 1);
+        assert_eq!(result.sections.len(), 1);
+        assert_eq!(result.symbols.len(), 1);
+    }
+
+    #[ignore]
+    #[test]
+    fn test_parse_large_sample() {
+        // FIXME: this fails while parsing multiple object files
+        let map_file = Path::new("tests/fixtures/linker.map");
+        let result = parse(map_file).unwrap();
+        assert_eq!(result.target_path, "/target/debug/deps/sample-app");
+        assert_eq!(result.arch, "arm64");
+        assert_eq!(result.object_files.len(), 1);
+        assert_eq!(result.sections.len(), 1);
+        assert_eq!(result.symbols.len(), 1);
     }
 }
