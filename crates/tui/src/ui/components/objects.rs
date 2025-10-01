@@ -1,37 +1,49 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Rect};
-use ratatui::style::Style;
+use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders, Cell, Row, Table};
 
 use crate::app::{AppState, FocusPane};
 use crate::style::{header_style, objects_block_title, selection_style};
 use crate::ui::components::truncate_path;
+use crate::units::format_size;
 
-pub fn render_objects(frame: &mut Frame, area: Rect, app: &AppState) {
-    let header =
-        Row::new(vec!["Id", "TEXT", "DATA", "BSS", "TOTAL", "Object"]).style(header_style());
+pub fn render_objects(frame: &mut Frame, area: Rect, app: &mut AppState) {
+    let header = Row::new(vec![
+        Cell::from("TEXT").style(Style::default().fg(Color::LightMagenta)),
+        Cell::from("DATA").style(Style::default().fg(Color::LightCyan)),
+        Cell::from("BSS").style(Style::default().fg(Color::LightYellow)),
+        Cell::from("TOTAL").style(Style::default().fg(Color::LightBlue)),
+        Cell::from("OBJECT"),
+    ])
+    .style(header_style());
+    // We'll approximate visible rows as height - 3 (top border + header + bottom border)
+    let body_rows = area.height.saturating_sub(3) as usize;
+    app.objects_view_rows = body_rows;
+    app.ensure_object_visible();
+    let start = app.objects_offset;
+    let end = (start + body_rows).min(app.filtered_object_indices.len());
 
-    let rows = app
-        .filtered_object_indices
+    let rows = app.filtered_object_indices[start..end]
         .iter()
         .enumerate()
-        .map(|(visible_row, &obj_idx)| {
+        .map(|(i, &obj_idx)| {
+            let actual_index = start + i;
             let o = &app.objects[obj_idx];
-            let style = if visible_row == app.selected_object_pos && app.focus == FocusPane::Objects
-            {
-                selection_style()
-            } else {
-                Style::default()
-            };
+            let style =
+                if actual_index == app.selected_object_pos && app.focus == FocusPane::Objects {
+                    selection_style()
+                } else {
+                    Style::default()
+                };
             Row::new(vec![
-                Cell::from(o.id.to_string()),
-                Cell::from(format!("0x{:X}", o.text)),
-                Cell::from(format!("0x{:X}", o.data)),
-                Cell::from(format!("0x{:X}", o.bss)),
-                Cell::from(format!("0x{:X}", o.total)),
+                Cell::from(format_size(o.text, app.display_units)),
+                Cell::from(format_size(o.data, app.display_units)),
+                Cell::from(format_size(o.bss, app.display_units)),
+                Cell::from(format_size(o.total, app.display_units)),
                 Cell::from(truncate_path(
                     &o.path,
-                    area.width.saturating_sub(25) as usize,
+                    area.width.saturating_sub(18) as usize,
                 )),
             ])
             .style(style)
@@ -39,11 +51,10 @@ pub fn render_objects(frame: &mut Frame, area: Rect, app: &AppState) {
     let table = Table::new(
         rows,
         &[
-            Constraint::Length(4),
-            Constraint::Length(10),
-            Constraint::Length(10),
-            Constraint::Length(10),
-            Constraint::Length(10),
+            Constraint::Length(12),
+            Constraint::Length(12),
+            Constraint::Length(12),
+            Constraint::Length(12),
             Constraint::Min(10),
         ],
     )
@@ -51,7 +62,8 @@ pub fn render_objects(frame: &mut Frame, area: Rect, app: &AppState) {
     .block(
         Block::default()
             .borders(Borders::ALL)
-            .title(objects_block_title()),
+            .title(objects_block_title())
+            .padding(ratatui::widgets::Padding::horizontal(1)),
     )
     .column_spacing(1);
     frame.render_widget(table, area);

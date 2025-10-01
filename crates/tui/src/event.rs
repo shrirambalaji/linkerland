@@ -1,7 +1,7 @@
 use anyhow::Result;
 use crossterm::event::KeyCode;
 
-use crate::app::{AppState, FocusPane, ObjectSortKey, SymbolSortKey};
+use crate::app::{AppState, DisplayUnits, FocusPane, ObjectSortKey, SymbolSortKey};
 use crate::filter::{apply_object_filter, refresh_symbols};
 use crate::sort::{apply_object_sort, apply_symbol_sort};
 
@@ -30,10 +30,19 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
         }
         KeyCode::Up => match app.focus {
             FocusPane::Objects => {
-                app.selected_object_pos = app.selected_object_pos.saturating_sub(1)
+                let prev = app.current_object_index();
+                app.selected_object_pos = app.selected_object_pos.saturating_sub(1);
+                app.ensure_object_visible();
+                let now = app.current_object_index();
+                if prev != now {
+                    refresh_symbols(app);
+                    app.selected_symbol_pos = 0;
+                    app.ensure_symbol_visible();
+                }
             }
             FocusPane::Symbols => {
-                app.selected_symbol_pos = app.selected_symbol_pos.saturating_sub(1)
+                app.selected_symbol_pos = app.selected_symbol_pos.saturating_sub(1);
+                app.ensure_symbol_visible();
             }
         },
         KeyCode::Down => match app.focus {
@@ -42,11 +51,14 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
                     app.selected_object_pos += 1;
                     refresh_symbols(app);
                     app.selected_symbol_pos = 0;
+                    app.ensure_object_visible();
+                    app.ensure_symbol_visible();
                 }
             }
             FocusPane::Symbols => {
                 if app.selected_symbol_pos + 1 < app.filtered_symbol_indices.len() {
                     app.selected_symbol_pos += 1;
+                    app.ensure_symbol_visible();
                 }
             }
         },
@@ -57,8 +69,7 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
                     ObjectSortKey::Text => ObjectSortKey::Data,
                     ObjectSortKey::Data => ObjectSortKey::Bss,
                     ObjectSortKey::Bss => ObjectSortKey::Path,
-                    ObjectSortKey::Path => ObjectSortKey::Id,
-                    ObjectSortKey::Id => ObjectSortKey::Total,
+                    ObjectSortKey::Path => ObjectSortKey::Total,
                 };
                 apply_object_sort(app);
             }
@@ -81,6 +92,12 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
                 apply_symbol_sort(app);
             }
         },
+        KeyCode::Char('u') => {
+            app.display_units = match app.display_units {
+                DisplayUnits::Human => DisplayUnits::Hex,
+                DisplayUnits::Hex => DisplayUnits::Human,
+            };
+        }
         KeyCode::Char(c) if !c.is_control() => match app.focus {
             FocusPane::Objects => {
                 app.object_filter.push(c);

@@ -28,7 +28,6 @@ pub enum ObjectSortKey {
     Data,
     Bss,
     Path,
-    Id,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +35,12 @@ pub enum SymbolSortKey {
     Size,
     Address,
     Name,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DisplayUnits {
+    Human,
+    Hex,
 }
 
 pub struct AppState {
@@ -56,6 +61,13 @@ pub struct AppState {
     pub symbol_sort_reverse: bool,
     pub show_help: bool,
     pub last_tick: Instant,
+    // Scrolling state
+    pub objects_offset: usize,
+    pub symbols_offset: usize,
+    // How many body rows (excluding header) are currently visible; set during render
+    pub objects_view_rows: usize,
+    pub symbols_view_rows: usize,
+    pub display_units: DisplayUnits,
 }
 
 impl AppState {
@@ -83,6 +95,11 @@ impl AppState {
             last_tick: Instant::now(),
             objects,
             symbols,
+            objects_offset: 0,
+            symbols_offset: 0,
+            objects_view_rows: 0,
+            symbols_view_rows: 0,
+            display_units: DisplayUnits::Human,
         })
     }
 
@@ -90,6 +107,38 @@ impl AppState {
         self.filtered_object_indices
             .get(self.selected_object_pos)
             .copied()
+    }
+
+    pub fn ensure_object_visible(&mut self) {
+        let rows = self.objects_view_rows;
+        if rows == 0 {
+            return;
+        }
+        if self.selected_object_pos < self.objects_offset {
+            self.objects_offset = self.selected_object_pos;
+        } else if self.selected_object_pos >= self.objects_offset + rows {
+            self.objects_offset = self.selected_object_pos + 1 - rows;
+        }
+        let max_off = self.filtered_object_indices.len().saturating_sub(rows);
+        if self.objects_offset > max_off {
+            self.objects_offset = max_off;
+        }
+    }
+
+    pub fn ensure_symbol_visible(&mut self) {
+        let rows = self.symbols_view_rows;
+        if rows == 0 {
+            return;
+        }
+        if self.selected_symbol_pos < self.symbols_offset {
+            self.symbols_offset = self.selected_symbol_pos;
+        } else if self.selected_symbol_pos >= self.symbols_offset + rows {
+            self.symbols_offset = self.selected_symbol_pos + 1 - rows;
+        }
+        let max_off = self.filtered_symbol_indices.len().saturating_sub(rows);
+        if self.symbols_offset > max_off {
+            self.symbols_offset = max_off;
+        }
     }
 }
 

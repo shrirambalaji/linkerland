@@ -12,7 +12,6 @@ pub fn apply_object_sort(app: &mut AppState) {
             ObjectSortKey::Data => oa.data.cmp(&ob.data),
             ObjectSortKey::Bss => oa.bss.cmp(&ob.bss),
             ObjectSortKey::Path => oa.path.cmp(&ob.path),
-            ObjectSortKey::Id => oa.id.cmp(&ob.id),
         };
         if reverse { ord.reverse() } else { ord }
     });
