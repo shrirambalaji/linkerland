@@ -5,7 +5,8 @@
 </picture>
 </div>
 
-<strong>linkerland</strong> is a tiny workbenchfor linker outputs with a collection of tools for inspecting linker artifacts.
+<strong>linkerland</strong> is a tiny workbench for visualizing & understanding linker artifacts.
+
 
 - `linkerland viz` — interactive **map** viewer (TUI) to find hot sections/symbols fast
 - `linkerland export` — non-interactive export (JSON/CSV) for scripting and CI
@@ -14,10 +15,11 @@
 
 ```bash
 # Build
-cargo install --path .
+cd crates/cli && cargo install --path .
 
-# Open a .map (TUI). Shorthand: passing a .map defaults to `viz`.
+# Open a .map 
 linkerland path/to/app.map
+
 # or
 linkerland viz path/to/app.map
 
