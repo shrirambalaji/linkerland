@@ -8,8 +8,8 @@
 <strong>linkerland</strong> is a tiny workbench for visualizing & understanding linker artifacts.
 
 
-- `linkerland viz` — interactive **map** viewer (TUI) to find hot sections/symbols fast
-- `linkerland export` — non-interactive export (JSON/CSV) for scripting and CI
+- `linkerland viz` - an interactive **map** viewer (TUI) to find hot sections/symbols fast
+- `linkerland export` - non-interactive export (JSON/CSV) for scripting and CI
 
 ## Getting Started
 
