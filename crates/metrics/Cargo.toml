@@ -1,0 +1,9 @@
+[package]
+name = "metrics"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+parser = { path = "../parser" }
+serde = { version = "1", features = ["derive"] }
