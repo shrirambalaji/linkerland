@@ -7,7 +7,7 @@ use clap::{Parser as ClapParser, Subcommand, ValueEnum};
 use regex::Regex;
 
 use parser::parse;
-use tui::{TuiOptions, run as tui_run};
+use tui::run as tui_run;
 
 #[derive(ClapParser, Debug)]
 #[command(version, arg_required_else_help = true)]
@@ -102,17 +102,9 @@ pub fn run_with(cli: Cli) -> Result<()> {
 }
 
 fn viz(args: VizArgs) -> Result<()> {
-    match parse(&args.mapfile) {
-        Ok(map) => {
-            let opts = TuiOptions {
-                sort: format!("{:?}", args.sort),
-                filter: args.filter.clone(),
-            };
-            if let Err(e) = tui_run(&map, &opts) {
-                eprintln!("TUI error: {e}");
-            }
-        }
-        Err(e) => eprintln!("Failed to parse map: {:?}", e),
+    parse(&args.mapfile).map_err(|e| anyhow::anyhow!("parse error: {:?}", e))?;
+    if let Err(e) = tui_run(args.mapfile.to_string_lossy().as_ref()) {
+        eprintln!("TUI error: {e}");
     }
     Ok(())
 }

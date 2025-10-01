@@ -1,8 +1,8 @@
 mod app;
 mod event;
-mod style;
-mod ui;
 mod filter;
 mod sort;
+mod style;
+mod ui;
 
 pub use app::run;

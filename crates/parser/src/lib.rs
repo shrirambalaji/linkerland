@@ -435,6 +435,6 @@ mod tests {
         assert_eq!(result.arch, "arm64");
         assert_eq!(result.object_files.len(), 67);
         assert_eq!(result.sections.len(), 14);
-        assert!(result.symbols.len() > 0);
+        assert!(!result.symbols.is_empty());
     }
 }
