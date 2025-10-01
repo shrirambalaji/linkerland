@@ -5,19 +5,22 @@
 </picture>
 </div>
 
-<strong>linkerland</strong> is a tool to parse and visualize linker map files generated with clang lld, GNU ld. It's still _work in progress_.
+<strong>linkerland</strong> is a tiny workbenchfor linker outputs with a collection of tools for inspecting linker artifacts.
 
+- `linkerland viz` — interactive **map** viewer (TUI) to find hot sections/symbols fast
+- `linkerland export` — non-interactive export (JSON/CSV) for scripting and CI
 
-## Usage
+## Getting Started
 
-### Command Line
+```bash
+# Build
+cargo install --path .
 
-```shell
-linkerland <linker_map_file>
-```
+# Open a .map (TUI). Shorthand: passing a .map defaults to `viz`.
+linkerland path/to/app.map
+# or
+linkerland viz path/to/app.map
 
-### GUI
-
-```shell
-linkerland --ui <linker_map_file>
+# Export current view as JSON/CSV (good for CI)
+linkerland export path/to/app.map --format json --out app.text.json
 ```
