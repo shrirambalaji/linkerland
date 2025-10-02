@@ -5,15 +5,7 @@ version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/shrirambalaji/linkerland"
-keywords = [
-    "linker",
-    "map",
-    "binary",
-    "analysis",
-    "tui",
-    "linkermapviz",
-    "mapfile",
-]
+keywords = ["linker", "map", "binary", "tui", "linkermapviz"]
 categories = ["command-line-utilities", "development-tools"]
 
 
