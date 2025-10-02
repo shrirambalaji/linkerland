@@ -12,8 +12,8 @@ use crate::filter::{apply_object_filter, refresh_symbols};
 use crate::style::TICK_RATE;
 use crate::ui::render;
 
-use metrics::build_metrics;
-use parser::parse;
+use linkerland_metrics::build_metrics;
+use linkerland_parser::parse;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FocusPane {
@@ -46,8 +46,8 @@ pub enum DisplayUnits {
 pub struct AppState {
     pub map_path: String,
     pub arch: String,
-    pub objects: Vec<metrics::ObjectMetrics>,
-    pub symbols: Vec<metrics::SymbolMetrics>,
+    pub objects: Vec<linkerland_metrics::ObjectMetrics>,
+    pub symbols: Vec<linkerland_metrics::SymbolMetrics>,
     pub filtered_object_indices: Vec<usize>,
     pub filtered_symbol_indices: Vec<usize>,
     pub selected_object_pos: usize,

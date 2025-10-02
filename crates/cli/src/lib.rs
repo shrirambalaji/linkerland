@@ -6,8 +6,8 @@ use anyhow::Result;
 use clap::{Parser as ClapParser, Subcommand, ValueEnum};
 use regex::Regex;
 
-use parser::parse;
-use tui::run as tui_run;
+use linkerland_parser::parse;
+use linkerland_tui::run as tui_run;
 
 #[derive(ClapParser, Debug)]
 #[command(version, arg_required_else_help = true)]
@@ -142,7 +142,7 @@ fn compare_hex_size(a: &str, b: &str) -> std::cmp::Ordering {
     pa.cmp(&pb)
 }
 
-fn export_json(symbols: &[&parser::Symbol], args: &ExportArgs) -> Result<()> {
+fn export_json(symbols: &[&linkerland_parser::Symbol], args: &ExportArgs) -> Result<()> {
     let mut out: Box<dyn Write> = if let Some(path) = &args.out {
         Box::new(File::create(path)?)
     } else {
@@ -153,7 +153,7 @@ fn export_json(symbols: &[&parser::Symbol], args: &ExportArgs) -> Result<()> {
     Ok(())
 }
 
-fn export_csv(symbols: &[&parser::Symbol], args: &ExportArgs) -> Result<()> {
+fn export_csv(symbols: &[&linkerland_parser::Symbol], args: &ExportArgs) -> Result<()> {
     let mut wtr: csv::Writer<Box<dyn Write>> = if let Some(path) = &args.out {
         csv::Writer::from_writer(Box::new(File::create(path)?))
     } else {

@@ -7,7 +7,7 @@ use ratatui::widgets::{Block, Borders, Cell, Row, Table};
 use crate::app::{AppState, FocusPane};
 use crate::style::{header_style, selection_style, symbols_block_title};
 use crate::units::format_size;
-use metrics::Bucket;
+use linkerland_metrics::Bucket;
 
 pub fn render_symbols(frame: &mut Frame, area: Rect, app: &mut AppState) {
     let header = Row::new(vec!["Addr", "Size", "Bucket", "Name"]).style(header_style());

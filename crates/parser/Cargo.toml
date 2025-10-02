@@ -1,7 +1,12 @@
 [package]
-name = "parser"
+name = "linkerland-parser"
 version = "0.1.0"
 edition = "2021"
+description = "Parser for linker map files (.map) - part of linkerland"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/shrirambalaji/linkerland"
+keywords = ["linker", "map", "parser", "mapfile"]
+categories = ["parsing", "development-tools"]
 
 [dependencies]
 winnow = { version = "0.7.13" }

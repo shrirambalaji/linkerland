@@ -1,11 +1,16 @@
 [package]
-name = "tui"
+name = "linkerland-tui"
 version = "0.1.0"
 edition = "2024"
+description = "Terminal user interface for linker map analysis - part of linkerland"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/shrirambalaji/linkerland"
+keywords = ["linker", "map", "tui", "terminal"]
+categories = ["command-line-interface", "development-tools"]
 
 [dependencies]
 ratatui = "0.29.0"
-parser = { path = "../parser" }
+linkerland-parser = { version = "0.1.0", path = "../parser" }
 crossterm = "0.27"
-metrics = { path = "../metrics" }
+linkerland-metrics = { version = "0.1.0", path = "../metrics" }
 anyhow = "1"

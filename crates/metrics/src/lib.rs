@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use parser::{MapFile, Section};
+use linkerland_parser::{MapFile, Section};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
@@ -205,7 +205,7 @@ pub fn build_metrics(map: &MapFile) -> Metrics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use parser::{MapFile, ObjectFile, Symbol};
+    use linkerland_parser::{MapFile, ObjectFile, Symbol};
 
     fn mk_map() -> MapFile {
         MapFile {

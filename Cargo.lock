@@ -413,11 +413,38 @@ dependencies = [
  "assert_cmd",
  "clap",
  "csv",
- "parser",
+ "linkerland-parser",
+ "linkerland-tui",
  "regex",
  "serde",
  "serde_json",
- "tui",
+]
+
+[[package]]
+name = "linkerland-metrics"
+version = "0.1.0"
+dependencies = [
+ "linkerland-parser",
+ "serde",
+]
+
+[[package]]
+name = "linkerland-parser"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "winnow",
+]
+
+[[package]]
+name = "linkerland-tui"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "crossterm 0.27.0",
+ "linkerland-metrics",
+ "linkerland-parser",
+ "ratatui",
 ]
 
 [[package]]
@@ -456,14 +483,6 @@ name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
-
-[[package]]
-name = "metrics"
-version = "0.1.0"
-dependencies = [
- "parser",
- "serde",
-]
 
 [[package]]
 name = "mio"
@@ -516,14 +535,6 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "parser"
-version = "0.1.0"
-dependencies = [
- "serde",
- "winnow",
 ]
 
 [[package]]
@@ -797,17 +808,6 @@ name = "termtree"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
-
-[[package]]
-name = "tui"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "crossterm 0.27.0",
- "metrics",
- "parser",
- "ratatui",
-]
 
 [[package]]
 name = "unicode-ident"

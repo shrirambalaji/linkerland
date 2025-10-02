@@ -1,9 +1,13 @@
 [package]
-name = "metrics"
+name = "linkerland-metrics"
 version = "0.1.0"
 edition = "2021"
+description = "Metrics aggregation and analysis for linker map files - part of linkerland"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/shrirambalaji/linkerland"
+keywords = ["linker", "map", "metrics", "analysis"]
+categories = ["development-tools"]
 
 [dependencies]
-parser = { path = "../parser" }
+linkerland-parser = { version = "0.1.0", path = "../parser" }
 serde = { version = "1", features = ["derive"] }
