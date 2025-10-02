@@ -10,10 +10,9 @@
 
 🗺️🔍 Analyze `.map` files interactively with a TUI, export metrics to JSON/CSV for CI pipelines, and quickly identify bloated sections and symbols.
 
-## Quickstart
+![Demo](./.github/demo.gif)
 
-> [!TIP]
-> Watch the quickstart video to see `linkerland` in action
+## Quickstart
 
 Install `linkerland` with `cargo`:
 
@@ -35,7 +34,7 @@ linkerland path/to/app.map
 linkerland viz path/to/app.map
 ```
 
-![Demo](./.github/demo.gif)
+
 
 ## Features
 
