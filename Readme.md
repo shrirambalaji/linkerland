@@ -1,28 +1,140 @@
-<div align="center">
-<picture align="center" width="400px;">
-  <source media="(prefers-color-scheme: dark)" srcset="./.github/images/logo-dark.png" width="400px;">
-  <img alt="linkerland logo in light" src="./.github/images/logo-light.png" width="400px;">
-</picture>
-</div>
+<p align="center">
+    <img src="./.github/images/logo-dark.png#gh-dark-mode-only" width="300">
+    <img src="./.github/images/logo-light.png#gh-light-mode-only" width="300">
+    <br>
+    <br>
+    <em>a tiny workbench for parsing, visualizing & analyzing linker artifacts.</em>
+    <br>
+    <br>
+</p>
 
-<strong>linkerland</strong> is a tiny workbench for visualizing & understanding linker artifacts.
+🗺️🔍 Analyze `.map` files interactively with a TUI, export metrics to JSON/CSV for CI pipelines, and quickly identify bloated sections and symbols.
 
+## Quickstart
 
-- `linkerland viz` - an interactive **map** viewer (TUI) to find hot sections/symbols fast
-- `linkerland export` - non-interactive export (JSON/CSV) for scripting and CI
+> [!TIP]
+> Watch the quickstart video to see `linkerland` in action
 
-## Getting Started
+Install `linkerland` with `cargo`:
 
 ```bash
-# Build
-cd crates/cli && cargo install --path .
+cargo install linkerland
+```
 
-# Open a .map 
+> [!NOTE]  
+> See the other [installation methods](#installation) 📦
+
+After the installation, you're all set! 💯
+
+Just dive into your linker map:
+
+```bash
 linkerland path/to/app.map
 
-# or
+# or explicitly:
 linkerland viz path/to/app.map
-
-# Export current view as JSON/CSV (good for CI)
-linkerland export path/to/app.map --format json --out app.text.json
 ```
+
+![Demo](./docs/demo.gif)
+
+## Features
+
+> [!NOTE]  
+> Detailed documentation is coming soon 📚
+
+### Interactive TUI (viz)
+
+Explore your linker map file with a terminal user interface featuring:
+
+- **Object table**: Browse all object files with their TEXT, DATA, BSS, and TOTAL sizes.
+- **Symbol table**: Drill down into symbols for the selected object, categorized by bucket (TEXT/DATA/BSS/OTHER).
+- **Filtering**: Press `/` to search/filter objects or symbols by name.
+- **Sorting**: Press `s` to cycle through sort keys (Total, Text, Data, Bss, Path for objects; Size, Address, Name for symbols).
+- **Units toggle**: Press `u` to switch between human-readable (KiB, MiB) and hex (0x...) formats.
+- **Navigation**: Arrow keys to move, `Tab` to switch panes, `r` to reverse sort order.
+
+> See [Keybindings](#keybindings) for full reference.
+
+### Export Metrics
+
+Export your linker map analysis to structured formats for scripting, CI, or further processing:
+
+```bash
+linkerland export path/to/app.map --format json --out analysis.json
+linkerland export path/to/app.map --format csv --out analysis.csv
+```
+
+Ideal for tracking binary size growth over time, alerting on regressions, or integrating into build dashboards.
+
+## Installation
+
+### From crates.io
+
+```bash
+cargo install linkerland
+```
+
+### From source
+
+```bash
+git clone https://github.com/shrirambalaji/linkerland.git
+cd linkerland
+cargo install --path .
+```
+
+### Pre-built binaries
+
+Download pre-built binaries from the [releases page](https://github.com/shrirambalaji/linkerland/releases).
+
+## Usage
+
+### Commands
+
+```bash
+# Launch interactive TUI (default if .map provided)
+linkerland <path-to-map>
+linkerland viz <path-to-map>
+
+# Export to JSON
+linkerland export <path-to-map> --format json --out output.json
+
+# Export to CSV
+linkerland export <path-to-map> --format csv --out output.csv
+```
+
+### Keybindings
+
+| Key       | Action                                                                     |
+| --------- | -------------------------------------------------------------------------- |
+| `↑` / `↓` | Navigate up/down in active pane                                            |
+| `Tab`     | Switch between Objects and Symbols panes                                   |
+| `/`       | Start filter (type to filter, Backspace to edit)                           |
+| `s`       | Cycle sort key (Total → Text → Data → Bss → Path or Size → Address → Name) |
+| `r`       | Reverse sort order                                                         |
+| `u`       | Toggle display units (human ↔ hex)                                         |
+| `?`       | Show help overlay                                                          |
+| `q`       | Quit                                                                       |
+| `Esc`     | Close help overlay                                                         |
+
+## Architecture
+
+**linkerland** has the following crates:
+
+- **parser**: Winnow-based parser for `.map` files; handles sections, symbols, addresses, sizes.
+- **metrics**: Aggregates parsed data into per-object and per-symbol metrics; classifies sections into buckets (TEXT/DATA/BSS/OTHER).
+- **cli**: Clap-based CLI with `viz` and `export` subcommands.
+- **tui**: Ratatui-based interactive terminal interface with filtering, sorting, scrolling, and unit toggling.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines _(coming soon)_.
+
+## License
+
+Licensed under either of [Apache License Version 2.0](./LICENSE-APACHE) or [The MIT License](./LICENSE-MIT) at your option.
+
+## Copyright
+
+Copyright © 2025, [Shriram Balaji](https://github.com/shrirambalaji)
