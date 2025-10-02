@@ -35,7 +35,7 @@ linkerland path/to/app.map
 linkerland viz path/to/app.map
 ```
 
-![Demo](./docs/demo.gif)
+![Demo](./.github/demo.gif)
 
 ## Features
 
