@@ -1,16 +1,60 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Rect};
-use ratatui::style::{Color, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Cell, Row, Table};
 
-use crate::app::{AppState, FocusPane};
+use crate::app::{AppState, FocusPane, SymbolSortKey};
 use crate::style::{header_style, selection_style, symbols_block_title};
 use crate::units::format_size;
 use linkerland_metrics::Bucket;
 
 pub fn render_symbols(frame: &mut Frame, area: Rect, app: &mut AppState) {
-    let header = Row::new(vec!["Addr", "Size", "Bucket", "Name"]).style(header_style());
+    let arrow = if app.symbol_sort_reverse {
+        " ↑"
+    } else {
+        " ↓"
+    };
+
+    let addr_label = if matches!(app.symbol_sort, SymbolSortKey::Address) {
+        format!("Addr{}", arrow)
+    } else {
+        "Addr".to_string()
+    };
+    let size_label = if matches!(app.symbol_sort, SymbolSortKey::Size) {
+        format!("Size{}", arrow)
+    } else {
+        "Size".to_string()
+    };
+    let name_label = if matches!(app.symbol_sort, SymbolSortKey::Name) {
+        format!("Name{}", arrow)
+    } else {
+        "Name".to_string()
+    };
+
+    let addr_style = if matches!(app.symbol_sort, SymbolSortKey::Address) {
+        Style::default().add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    let size_style = if matches!(app.symbol_sort, SymbolSortKey::Size) {
+        Style::default().add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+    let name_style = if matches!(app.symbol_sort, SymbolSortKey::Name) {
+        Style::default().add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+
+    let header = Row::new(vec![
+        Cell::from(addr_label).style(addr_style),
+        Cell::from(size_label).style(size_style),
+        Cell::from("Bucket"),
+        Cell::from(name_label).style(name_style),
+    ])
+    .style(header_style());
     let body_rows = area.height.saturating_sub(3) as usize; // header + borders
     app.symbols_view_rows = body_rows;
     app.ensure_symbol_visible();

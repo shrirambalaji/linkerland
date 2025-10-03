@@ -1,20 +1,86 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Rect};
-use ratatui::style::{Color, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Cell, Row, Table};
 
-use crate::app::{AppState, FocusPane};
+use crate::app::{AppState, FocusPane, ObjectSortKey};
 use crate::style::{header_style, objects_block_title, selection_style};
 use crate::ui::components::truncate_path;
 use crate::units::format_size;
 
 pub fn render_objects(frame: &mut Frame, area: Rect, app: &mut AppState) {
+    let arrow = if app.object_sort_reverse {
+        " ↑"
+    } else {
+        " ↓"
+    };
+
+    let text_label = if matches!(app.object_sort, ObjectSortKey::Text) {
+        format!("TEXT{}", arrow)
+    } else {
+        "TEXT".to_string()
+    };
+    let data_label = if matches!(app.object_sort, ObjectSortKey::Data) {
+        format!("DATA{}", arrow)
+    } else {
+        "DATA".to_string()
+    };
+    let bss_label = if matches!(app.object_sort, ObjectSortKey::Bss) {
+        format!("BSS{}", arrow)
+    } else {
+        "BSS".to_string()
+    };
+    let total_label = if matches!(app.object_sort, ObjectSortKey::Total) {
+        format!("TOTAL{}", arrow)
+    } else {
+        "TOTAL".to_string()
+    };
+    let object_label = if matches!(app.object_sort, ObjectSortKey::Path) {
+        format!("OBJECT{}", arrow)
+    } else {
+        "OBJECT".to_string()
+    };
+
+    let text_style = if matches!(app.object_sort, ObjectSortKey::Text) {
+        Style::default()
+            .fg(Color::LightMagenta)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::LightMagenta)
+    };
+    let data_style = if matches!(app.object_sort, ObjectSortKey::Data) {
+        Style::default()
+            .fg(Color::LightCyan)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::LightCyan)
+    };
+    let bss_style = if matches!(app.object_sort, ObjectSortKey::Bss) {
+        Style::default()
+            .fg(Color::LightYellow)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::LightYellow)
+    };
+    let total_style = if matches!(app.object_sort, ObjectSortKey::Total) {
+        Style::default()
+            .fg(Color::LightBlue)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::LightBlue)
+    };
+    let object_style = if matches!(app.object_sort, ObjectSortKey::Path) {
+        Style::default().add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+
     let header = Row::new(vec![
-        Cell::from("TEXT").style(Style::default().fg(Color::LightMagenta)),
-        Cell::from("DATA").style(Style::default().fg(Color::LightCyan)),
-        Cell::from("BSS").style(Style::default().fg(Color::LightYellow)),
-        Cell::from("TOTAL").style(Style::default().fg(Color::LightBlue)),
-        Cell::from("OBJECT"),
+        Cell::from(text_label).style(text_style),
+        Cell::from(data_label).style(data_style),
+        Cell::from(bss_label).style(bss_style),
+        Cell::from(total_label).style(total_style),
+        Cell::from(object_label).style(object_style),
     ])
     .style(header_style());
     // We'll approximate visible rows as height - 3 (top border + header + bottom border)

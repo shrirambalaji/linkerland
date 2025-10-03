@@ -205,12 +205,13 @@ pub fn build_metrics(map: &MapFile) -> Metrics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use linkerland_parser::{MapFile, ObjectFile, Symbol};
+    use linkerland_parser::{BinaryFormat, MapFile, ObjectFile, Symbol};
 
     fn mk_map() -> MapFile {
         MapFile {
             arch: "arm64".into(),
             target_path: "/tmp/app".into(),
+            binary_format: BinaryFormat::MachO,
             object_files: vec![ObjectFile {
                 index: 1,
                 path: "a.o".into(),

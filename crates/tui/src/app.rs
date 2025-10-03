@@ -46,6 +46,7 @@ pub enum DisplayUnits {
 pub struct AppState {
     pub map_path: String,
     pub arch: String,
+    pub binary_format: String,
     pub objects: Vec<linkerland_metrics::ObjectMetrics>,
     pub symbols: Vec<linkerland_metrics::SymbolMetrics>,
     pub filtered_object_indices: Vec<usize>,
@@ -80,6 +81,7 @@ impl AppState {
         Ok(Self {
             map_path: map.target_path,
             arch: map.arch,
+            binary_format: map.binary_format.as_str().to_string(),
             filtered_object_indices: (0..objects.len()).collect(),
             filtered_symbol_indices: Vec::new(),
             selected_object_pos: 0,

@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use winnow::{
     ascii::{digit1, line_ending, multispace0, till_line_ending},
-    combinator::{alt, delimited, eof, opt, peek, preceded, repeat, repeat_till, seq, terminated},
+    combinator::{alt, delimited, eof, opt, peek, preceded, repeat, repeat_till, terminated},
     error::{StrContext, StrContextValue},
     token::literal,
     Parser, Result as ParserResult,
@@ -49,6 +49,23 @@ impl MapFileHeaders {
     }
 }
 
+#[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
+pub enum BinaryFormat {
+    MachO,
+    Elf,
+    Unknown,
+}
+
+impl BinaryFormat {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            BinaryFormat::MachO => "Mach-O",
+            BinaryFormat::Elf => "ELF",
+            BinaryFormat::Unknown => "Unknown",
+        }
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct ObjectFile {
     pub index: i32,
@@ -62,6 +79,7 @@ pub struct MapFile {
     pub target_path: String,
     pub symbols: Vec<Symbol>,
     pub sections: Vec<Section>,
+    pub binary_format: BinaryFormat,
 }
 
 fn read_file(map_file: &Path) -> String {
@@ -239,20 +257,50 @@ fn target_path<'i>(input: &mut &'i str) -> ParserResult<&'i str> {
     .parse_next(input)
 }
 
+/// Detect binary format based on section names.
+fn detect_binary_format(sections: &[Section]) -> BinaryFormat {
+    // Check if any section starts with "__" (Mach-O style)
+    let has_macho_sections = sections
+        .iter()
+        .any(|s| s.segment.starts_with("__") || s.section.starts_with("__"));
+
+    // Check if any section starts with "." (ELF style)
+    let has_elf_sections = sections
+        .iter()
+        .any(|s| s.segment.starts_with('.') || s.section.starts_with('.'));
+
+    if has_macho_sections {
+        BinaryFormat::MachO
+    } else if has_elf_sections {
+        BinaryFormat::Elf
+    } else {
+        BinaryFormat::Unknown
+    }
+}
+
 /// Parse whole map: Path -> Arch -> Object files -> Sections -> Symbols.
 pub fn parse(map_file: &Path) -> ParserResult<MapFile> {
     let contents = read_file(map_file);
     let mut input = contents.as_str();
-    let parsed_map_file = seq!(MapFile {
-        target_path: target_path.map(|s: &str| s.to_string()),
-        arch: arch.map(|s: &str| s.to_string()),
-        object_files: object_files,
-        sections: section_table,
-        symbols: symbol_table,
-    })
-    .parse_next(&mut input)?;
 
-    Ok(parsed_map_file)
+    // Parse all fields first
+    let target_path = target_path(&mut input)?.to_string();
+    let arch = arch(&mut input)?.to_string();
+    let object_files = object_files(&mut input)?;
+    let sections = section_table(&mut input)?;
+    let symbols = symbol_table(&mut input)?;
+
+    // Detect binary format based on section names
+    let binary_format = detect_binary_format(&sections);
+
+    Ok(MapFile {
+        target_path,
+        arch,
+        object_files,
+        sections,
+        symbols,
+        binary_format,
+    })
 }
 
 #[cfg(test)]
@@ -384,6 +432,44 @@ mod tests {
         assert_eq!(sections[1].address, "0x10004C059");
         assert_eq!(sections[1].section, "__text");
         assert_eq!(sections[1].segment, "__TEXT");
+    }
+
+    #[test]
+    fn test_binary_format_detection_macho() {
+        let sections = vec![
+            Section {
+                address: "0x1000007DC".to_string(),
+                size: "0x00036FC4".to_string(),
+                segment: "__TEXT".to_string(),
+                section: "__text".to_string(),
+            },
+            Section {
+                address: "0x100048000".to_string(),
+                size: "0x00000208".to_string(),
+                segment: "__DATA".to_string(),
+                section: "__data".to_string(),
+            },
+        ];
+        assert_eq!(detect_binary_format(&sections), BinaryFormat::MachO);
+    }
+
+    #[test]
+    fn test_binary_format_detection_elf() {
+        let sections = vec![
+            Section {
+                address: "0x1000".to_string(),
+                size: "0x1234".to_string(),
+                segment: ".text".to_string(),
+                section: ".text".to_string(),
+            },
+            Section {
+                address: "0x2000".to_string(),
+                size: "0x5678".to_string(),
+                segment: ".data".to_string(),
+                section: ".data".to_string(),
+            },
+        ];
+        assert_eq!(detect_binary_format(&sections), BinaryFormat::Elf);
     }
 
     #[test]
