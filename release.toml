@@ -5,5 +5,4 @@ sign-tag = false
 push-remote = "origin"
 pre-release-commit-message = "chore: release {{version}}"
 tag-message = "chore: release {{version}}"
-tag-prefix = "v"
 consolidate-commits = false
