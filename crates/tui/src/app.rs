@@ -63,10 +63,8 @@ pub struct AppState {
     pub show_help: bool,
     pub filter_mode: bool,
     pub last_tick: Instant,
-    // Scrolling state
     pub objects_offset: usize,
     pub symbols_offset: usize,
-    // How many body rows (excluding header) are currently visible; set during render
     pub objects_view_rows: usize,
     pub symbols_view_rows: usize,
     pub display_units: DisplayUnits,
@@ -161,13 +159,11 @@ pub fn run(map_path: &str) -> Result<()> {
         terminal.draw(|f| render(f, &mut app))?;
 
         let elapsed = app.last_tick.elapsed();
-        if event::poll(TICK_RATE.saturating_sub(elapsed)).unwrap_or(false) {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press && handle_key(key.code, &mut app)? {
+        if event::poll(TICK_RATE.saturating_sub(elapsed)).unwrap_or(false)
+            && let Event::Key(key) = event::read()?
+                && key.kind == KeyEventKind::Press && handle_key(key.code, &mut app)? {
                     break;
                 }
-            }
-        }
         if app.last_tick.elapsed() >= TICK_RATE {
             app.last_tick = Instant::now();
         }
