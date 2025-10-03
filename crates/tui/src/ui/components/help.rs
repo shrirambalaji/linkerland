@@ -16,11 +16,53 @@ pub fn render_help(frame: &mut Frame, _app: &AppState) {
                 .fg(Color::LightGreen)
                 .add_modifier(ratatui::style::Modifier::BOLD),
         )]),
+        Line::from(""),
         Line::from(vec![Span::styled(
-            "↑↓ navigate  |  / filter  | s sort  | r reverse  | u units  | <Tab> pane  | q quit  | ? help",
+            "Navigation:",
+            Style::default()
+                .fg(Color::LightCyan)
+                .add_modifier(ratatui::style::Modifier::BOLD),
+        )]),
+        Line::from(vec![Span::raw("  ↑↓        Navigate up/down")]),
+        Line::from(vec![Span::raw(
+            "  Tab       Switch between Objects and Symbols panes",
+        )]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Filtering:",
+            Style::default()
+                .fg(Color::LightCyan)
+                .add_modifier(ratatui::style::Modifier::BOLD),
+        )]),
+        Line::from(vec![Span::raw("  /         Enter filter mode")]),
+        Line::from(vec![Span::raw("  [type]    Type to filter current pane")]),
+        Line::from(vec![Span::raw("  Backspace Delete last character")]),
+        Line::from(vec![Span::raw("  Esc       Exit filter mode")]),
+        Line::from(vec![Span::raw("  Enter     Exit filter mode")]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Sorting & Display:",
+            Style::default()
+                .fg(Color::LightCyan)
+                .add_modifier(ratatui::style::Modifier::BOLD),
+        )]),
+        Line::from(vec![Span::raw("  s         Cycle sort key")]),
+        Line::from(vec![Span::raw("  r         Reverse sort order")]),
+        Line::from(vec![Span::raw("  u         Toggle units (human ↔ hex)")]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "General:",
+            Style::default()
+                .fg(Color::LightCyan)
+                .add_modifier(ratatui::style::Modifier::BOLD),
+        )]),
+        Line::from(vec![Span::raw("  ?         Show/hide this help")]),
+        Line::from(vec![Span::raw("  q         Quit")]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "Press Esc or ? to close",
             Style::default().fg(Color::Gray),
         )]),
-        Line::from(vec![Span::raw("Esc or ? to close")]),
     ];
     let text = Paragraph::new(lines);
     frame.render_widget(Clear, area);
