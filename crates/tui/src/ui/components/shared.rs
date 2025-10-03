@@ -34,6 +34,20 @@ pub fn truncate_path(path: &str, max: usize) -> String {
     if path.len() <= max {
         return path.to_string();
     }
-    let keep = max.saturating_sub(3);
-    format!("{}...", &path[..keep])
+
+    if max < 3 {
+        return "...".to_string();
+    }
+
+    // Show both start and end: "start/.../end"
+    let available = max.saturating_sub(3);
+
+    let start_len = (available * 2) / 5;
+    let end_len = available.saturating_sub(start_len);
+
+    let start = &path[..start_len.min(path.len())];
+    let end_start_pos = path.len().saturating_sub(end_len);
+    let end = &path[end_start_pos..];
+
+    format!("{}...{}", start, end)
 }
