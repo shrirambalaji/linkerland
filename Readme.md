@@ -1,6 +1,6 @@
 <p align="center">
-    <img src="./.github/images/logo-dark.png#gh-dark-mode-only" width="300">
-    <img src="./.github/images/logo-light.png#gh-light-mode-only" width="300">
+    <img src="./.github/images/linkerland-dark.svg#gh-dark-mode-only" width="300">
+    <img src="./.github/images/linkerland-light.svg#gh-light-mode-only" width="300">
     <br>
     <br>
     <em>a tiny workbench for parsing, visualizing & analyzing linker artifacts.</em>
