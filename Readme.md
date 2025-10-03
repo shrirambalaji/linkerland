@@ -10,10 +10,9 @@
 
 🗺️🔍 Analyze `.map` files interactively with a TUI, export metrics to JSON/CSV for CI pipelines, and quickly identify bloated sections and symbols.
 
-## Quickstart
+![Demo](./.github/demo.gif)
 
-> [!TIP]
-> Watch the quickstart video to see `linkerland` in action
+## Quickstart
 
 Install `linkerland` with `cargo`:
 
@@ -26,7 +25,7 @@ cargo install linkerland
 
 After the installation, you're all set! 💯
 
-Just dive into your linker map:
+Dive into your linker map:
 
 ```bash
 linkerland path/to/app.map
@@ -35,12 +34,9 @@ linkerland path/to/app.map
 linkerland viz path/to/app.map
 ```
 
-![Demo](./.github/demo.gif)
+
 
 ## Features
-
-> [!NOTE]  
-> Detailed documentation is coming soon 📚
 
 ### Interactive TUI (viz)
 
@@ -82,10 +78,6 @@ cd linkerland
 cargo install --path .
 ```
 
-### Pre-built binaries
-
-Download pre-built binaries from the [releases page](https://github.com/shrirambalaji/linkerland/releases).
-
 ## Usage
 
 ### Commands
@@ -125,11 +117,6 @@ linkerland export <path-to-map> --format csv --out output.csv
 - **cli**: Clap-based CLI with `viz` and `export` subcommands.
 - **tui**: Ratatui-based interactive terminal interface with filtering, sorting, scrolling, and unit toggling.
 
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines _(coming soon)_.
 
 ## License
 
