@@ -10,10 +10,7 @@
 
 🗺️🔍 Analyze `.map` files interactively with a TUI, export metrics to JSON/CSV for CI pipelines, and quickly identify bloated sections and symbols.
 
-> [!IMPORTANT]  
-> **Platform Support**: Currently supports **macOS (Mach-O)** linker map files only. Linux (ELF) support is coming soon.
-
-![Demo](./.github/demo.gif)
+![Demo](./.github/demo-opt.gif)
 
 ## Quickstart
 
@@ -23,9 +20,7 @@ Install `linkerland` with `cargo`:
 cargo install linkerland
 ```
 
-After the installation, you're all set! 💯
-
-Dive into your linker map:
+After the installation, you're all set! Let's dive into your linker map:
 
 ```bash
 linkerland path/to/app.map
@@ -33,6 +28,9 @@ linkerland path/to/app.map
 # or explicitly:
 linkerland viz path/to/app.map
 ```
+
+> [!NOTE]  
+> Currently supports **macOS (Mach-O)** linker map files only. Linux (ELF) support is coming soon.
 
 ## Features
 
