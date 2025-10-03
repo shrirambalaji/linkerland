@@ -7,18 +7,12 @@ use ratatui::widgets::Paragraph;
 use crate::app::{AppState, DisplayUnits, FocusPane};
 
 pub fn render_status(frame: &mut Frame, area: Rect, app: &AppState) {
-    let (prompt_label, current_filter) = if app.focus == FocusPane::Objects {
-        ("filter", &app.object_filter)
-    } else {
-        ("filter", &app.symbol_filter)
-    };
-
     let units_label = match app.display_units {
         DisplayUnits::Human => "human",
         DisplayUnits::Hex => "hex",
     };
 
-    let status = Line::from(vec![
+    let mut spans = vec![
         Span::styled(
             " ↑↓ navigate  |  / filter  | s sort | r reverse | u units | <Tab> pane | q quit | ? help  |  ",
             Style::default().fg(Color::Gray),
@@ -28,12 +22,26 @@ pub fn render_status(frame: &mut Frame, area: Rect, app: &AppState) {
             format!("{}  ", units_label),
             Style::default().fg(Color::LightGreen),
         ),
-        Span::raw(format!("{}:", prompt_label)),
-        Span::styled(
-            format!(" /{}", current_filter),
+    ];
+
+    if app.filter_mode {
+        let current_filter = if app.focus == FocusPane::Objects {
+            &app.object_filter
+        } else {
+            &app.symbol_filter
+        };
+
+        spans.push(Span::styled(
+            format!("/{}", current_filter),
             Style::default().fg(Color::Yellow),
-        ),
-    ]);
+        ));
+        spans.push(Span::styled(
+            "  (esc exit filter mode)",
+            Style::default().fg(Color::Gray),
+        ));
+    }
+
+    let status = Line::from(spans);
 
     frame.render_widget(Paragraph::new(status), area);
 }

@@ -13,6 +13,48 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
         }
         return Ok(false);
     }
+
+    // Handle filter mode
+    if app.filter_mode {
+        match code {
+            KeyCode::Esc | KeyCode::Enter => {
+                app.filter_mode = false;
+                // Refresh filters when exiting filter mode
+                match app.focus {
+                    FocusPane::Objects => {
+                        apply_object_filter(app);
+                        refresh_symbols(app);
+                    }
+                    FocusPane::Symbols => {
+                        refresh_symbols(app);
+                    }
+                }
+            }
+            KeyCode::Char(c) if !c.is_control() => match app.focus {
+                FocusPane::Objects => {
+                    app.object_filter.push(c);
+                    apply_object_filter(app);
+                }
+                FocusPane::Symbols => {
+                    app.symbol_filter.push(c);
+                    refresh_symbols(app);
+                }
+            },
+            KeyCode::Backspace => match app.focus {
+                FocusPane::Objects => {
+                    app.object_filter.pop();
+                    apply_object_filter(app);
+                }
+                FocusPane::Symbols => {
+                    app.symbol_filter.pop();
+                    refresh_symbols(app);
+                }
+            },
+            _ => {}
+        }
+        return Ok(false);
+    }
+
     match code {
         KeyCode::Char('q') => return Ok(true),
         KeyCode::Tab => {
@@ -21,10 +63,9 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
                 FocusPane::Symbols => FocusPane::Objects,
             };
         }
-        KeyCode::Char('/') => match app.focus {
-            FocusPane::Objects => app.object_filter.clear(),
-            FocusPane::Symbols => app.symbol_filter.clear(),
-        },
+        KeyCode::Char('/') => {
+            app.filter_mode = true;
+        }
         KeyCode::Char('?') => {
             app.show_help = true;
         }
@@ -98,26 +139,6 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
                 DisplayUnits::Hex => DisplayUnits::Human,
             };
         }
-        KeyCode::Char(c) if !c.is_control() => match app.focus {
-            FocusPane::Objects => {
-                app.object_filter.push(c);
-                apply_object_filter(app);
-            }
-            FocusPane::Symbols => {
-                app.symbol_filter.push(c);
-                refresh_symbols(app);
-            }
-        },
-        KeyCode::Backspace => match app.focus {
-            FocusPane::Objects => {
-                app.object_filter.pop();
-                apply_object_filter(app);
-            }
-            FocusPane::Symbols => {
-                app.symbol_filter.pop();
-                refresh_symbols(app);
-            }
-        },
         _ => {}
     }
     Ok(false)
