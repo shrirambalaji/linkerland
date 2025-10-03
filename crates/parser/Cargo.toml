@@ -1,6 +1,6 @@
 [package]
 name = "linkerland-parser"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Parser for linker map files (.map) - part of linkerland"
 license = "MIT OR Apache-2.0"

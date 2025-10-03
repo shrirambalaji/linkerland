@@ -9,5 +9,5 @@ keywords = ["linker", "map", "metrics", "analysis"]
 categories = ["development-tools"]
 
 [dependencies]
-linkerland-parser = { version = "0.1.0", path = "../parser" }
+linkerland-parser = { version = "0.1.1", path = "../parser" }
 serde = { version = "1", features = ["derive"] }
