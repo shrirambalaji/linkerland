@@ -12,5 +12,5 @@ categories = ["command-line-interface", "development-tools"]
 ratatui = "0.29.0"
 linkerland-parser = { version = "0.1.1", path = "../parser" }
 crossterm = "0.27"
-linkerland-metrics = { version = "0.1.0", path = "../metrics" }
+linkerland-metrics = { version = "0.1.1", path = "../metrics" }
 anyhow = "1"
