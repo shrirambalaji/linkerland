@@ -1,6 +1,6 @@
 [package]
 name = "linkerland-tui"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Terminal user interface for linker map analysis - part of linkerland"
 license = "MIT OR Apache-2.0"
