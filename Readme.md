@@ -3,7 +3,7 @@
     <img src="./.github/images/linkerland-light.svg#gh-light-mode-only" width="300">
     <br>
     <br>
-    <em>a tiny workbench for parsing, visualizing & analyzing linker artifacts.</em>
+    <em>a tiny workbench for parsing, visualizing & analyzing linker map files.</em>
     <br>
     <br>
 </p>
