@@ -1,9 +1,7 @@
 use anyhow::Result;
 use crossterm::event::KeyCode;
 
-use crate::app::{AppState, DisplayUnits, FocusPane, ObjectSortKey, SymbolSortKey};
-use crate::filter::{apply_object_filter, refresh_symbols};
-use crate::sort::{apply_object_sort, apply_symbol_sort};
+use crate::app::{AppState, DisplayUnits, FocusPane};
 
 pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
     if app.show_help {
@@ -19,35 +17,25 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
         match code {
             KeyCode::Esc | KeyCode::Enter => {
                 app.filter_mode = false;
-                // Refresh filters when exiting filter mode
-                match app.focus {
-                    FocusPane::Objects => {
-                        apply_object_filter(app);
-                        refresh_symbols(app);
-                    }
-                    FocusPane::Symbols => {
-                        refresh_symbols(app);
-                    }
-                }
             }
             KeyCode::Char(c) if !c.is_control() => match app.focus {
                 FocusPane::Objects => {
-                    app.object_filter.push(c);
-                    apply_object_filter(app);
+                    app.objects.push_filter_char(c);
+                    app.symbols
+                        .refresh_for_object(app.objects.current_object_id());
                 }
                 FocusPane::Symbols => {
-                    app.symbol_filter.push(c);
-                    refresh_symbols(app);
+                    app.symbols.push_filter_char(c);
                 }
             },
             KeyCode::Backspace => match app.focus {
                 FocusPane::Objects => {
-                    app.object_filter.pop();
-                    apply_object_filter(app);
+                    app.objects.pop_filter_char();
+                    app.symbols
+                        .refresh_for_object(app.objects.current_object_id());
                 }
                 FocusPane::Symbols => {
-                    app.symbol_filter.pop();
-                    refresh_symbols(app);
+                    app.symbols.pop_filter_char();
                 }
             },
             _ => {}
@@ -71,66 +59,46 @@ pub fn handle_key(code: KeyCode, app: &mut AppState) -> Result<bool> {
         }
         KeyCode::Up => match app.focus {
             FocusPane::Objects => {
-                let prev = app.current_object_index();
-                app.selected_object_pos = app.selected_object_pos.saturating_sub(1);
-                app.ensure_object_visible();
-                let now = app.current_object_index();
-                if prev != now {
-                    refresh_symbols(app);
-                    app.selected_symbol_pos = 0;
-                    app.ensure_symbol_visible();
+                let prev_id = app.objects.current_object_id();
+                app.objects.navigate_up();
+                let new_id = app.objects.current_object_id();
+                if prev_id != new_id {
+                    app.symbols.refresh_for_object(new_id);
+                    app.symbols.reset_selection();
                 }
             }
             FocusPane::Symbols => {
-                app.selected_symbol_pos = app.selected_symbol_pos.saturating_sub(1);
-                app.ensure_symbol_visible();
+                app.symbols.navigate_up();
             }
         },
         KeyCode::Down => match app.focus {
             FocusPane::Objects => {
-                if app.selected_object_pos + 1 < app.filtered_object_indices.len() {
-                    app.selected_object_pos += 1;
-                    refresh_symbols(app);
-                    app.selected_symbol_pos = 0;
-                    app.ensure_object_visible();
-                    app.ensure_symbol_visible();
+                let prev_id = app.objects.current_object_id();
+                app.objects.navigate_down();
+                let new_id = app.objects.current_object_id();
+                if prev_id != new_id {
+                    app.symbols.refresh_for_object(new_id);
+                    app.symbols.reset_selection();
                 }
             }
             FocusPane::Symbols => {
-                if app.selected_symbol_pos + 1 < app.filtered_symbol_indices.len() {
-                    app.selected_symbol_pos += 1;
-                    app.ensure_symbol_visible();
-                }
+                app.symbols.navigate_down();
             }
         },
         KeyCode::Char('s') => match app.focus {
             FocusPane::Objects => {
-                app.object_sort = match app.object_sort {
-                    ObjectSortKey::Total => ObjectSortKey::Text,
-                    ObjectSortKey::Text => ObjectSortKey::Data,
-                    ObjectSortKey::Data => ObjectSortKey::Bss,
-                    ObjectSortKey::Bss => ObjectSortKey::Path,
-                    ObjectSortKey::Path => ObjectSortKey::Total,
-                };
-                apply_object_sort(app);
+                app.objects.cycle_sort_key();
             }
             FocusPane::Symbols => {
-                app.symbol_sort = match app.symbol_sort {
-                    SymbolSortKey::Size => SymbolSortKey::Address,
-                    SymbolSortKey::Address => SymbolSortKey::Name,
-                    SymbolSortKey::Name => SymbolSortKey::Size,
-                };
-                apply_symbol_sort(app);
+                app.symbols.cycle_sort_key();
             }
         },
         KeyCode::Char('r') => match app.focus {
             FocusPane::Objects => {
-                app.object_sort_reverse = !app.object_sort_reverse;
-                apply_object_sort(app);
+                app.objects.toggle_sort_direction();
             }
             FocusPane::Symbols => {
-                app.symbol_sort_reverse = !app.symbol_sort_reverse;
-                apply_symbol_sort(app);
+                app.symbols.toggle_sort_direction();
             }
         },
         KeyCode::Char('u') => {

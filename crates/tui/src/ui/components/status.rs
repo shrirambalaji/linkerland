@@ -26,9 +26,9 @@ pub fn render_status(frame: &mut Frame, area: Rect, app: &AppState) {
 
     if app.filter_mode {
         let current_filter = if app.focus == FocusPane::Objects {
-            &app.object_filter
+            &app.objects.filter_text
         } else {
-            &app.symbol_filter
+            &app.symbols.filter_text
         };
 
         spans.push(Span::styled(

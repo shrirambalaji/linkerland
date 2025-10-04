@@ -4,70 +4,55 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Cell, Row, Table};
 
-use crate::app::{AppState, FocusPane, SymbolSortKey};
+use crate::app::{AppState, FocusPane};
+use crate::state::{SortDirection, SymbolSortKey};
 use crate::style::{header_style, selection_style, symbols_block_title};
 use crate::units::format_size;
 use linkerland_metrics::Bucket;
 
 pub fn render_symbols(frame: &mut Frame, area: Rect, app: &mut AppState) {
-    let arrow = if app.symbol_sort_reverse {
-        " ↑"
-    } else {
-        " ↓"
+    let arrow = match app.symbols.sort_direction {
+        SortDirection::Ascending => " ↑",
+        SortDirection::Descending => " ↓",
+    };
+    let sort_key = app.symbols.sort_key;
+
+    let make_label = |base: &str, key: SymbolSortKey| {
+        if sort_key == key {
+            format!("{}{}", base, arrow)
+        } else {
+            base.to_string()
+        }
     };
 
-    let addr_label = if matches!(app.symbol_sort, SymbolSortKey::Address) {
-        format!("Addr{}", arrow)
-    } else {
-        "Addr".to_string()
-    };
-    let size_label = if matches!(app.symbol_sort, SymbolSortKey::Size) {
-        format!("Size{}", arrow)
-    } else {
-        "Size".to_string()
-    };
-    let name_label = if matches!(app.symbol_sort, SymbolSortKey::Name) {
-        format!("Name{}", arrow)
-    } else {
-        "Name".to_string()
-    };
-
-    let addr_style = if matches!(app.symbol_sort, SymbolSortKey::Address) {
-        Style::default().add_modifier(Modifier::BOLD)
-    } else {
-        Style::default()
-    };
-    let size_style = if matches!(app.symbol_sort, SymbolSortKey::Size) {
-        Style::default().add_modifier(Modifier::BOLD)
-    } else {
-        Style::default()
-    };
-    let name_style = if matches!(app.symbol_sort, SymbolSortKey::Name) {
-        Style::default().add_modifier(Modifier::BOLD)
-    } else {
-        Style::default()
+    let make_style = |key: SymbolSortKey| {
+        if sort_key == key {
+            Style::default().add_modifier(Modifier::BOLD)
+        } else {
+            Style::default()
+        }
     };
 
     let header = Row::new(vec![
-        Cell::from(addr_label).style(addr_style),
-        Cell::from(size_label).style(size_style),
+        Cell::from(make_label("Addr", SymbolSortKey::Address))
+            .style(make_style(SymbolSortKey::Address)),
+        Cell::from(make_label("Size", SymbolSortKey::Size)).style(make_style(SymbolSortKey::Size)),
         Cell::from("Bucket"),
-        Cell::from(name_label).style(name_style),
+        Cell::from(make_label("Name", SymbolSortKey::Name)).style(make_style(SymbolSortKey::Name)),
     ])
     .style(header_style());
     let body_rows = area.height.saturating_sub(3) as usize; // header + borders
-    app.symbols_view_rows = body_rows;
-    app.ensure_symbol_visible();
-    let start = app.symbols_offset;
-    let end = (start + body_rows).min(app.filtered_symbol_indices.len());
-    let rows = app.filtered_symbol_indices[start..end]
+    app.symbols.set_view_rows(body_rows);
+    let start = app.symbols.offset;
+    let end = (start + body_rows).min(app.symbols.filtered_indices.len());
+    let rows = app.symbols.filtered_indices[start..end]
         .iter()
         .enumerate()
         .map(|(i, &sym_idx)| {
             let actual_index = start + i;
-            let s = &app.symbols[sym_idx];
+            let s = &app.symbols.symbols()[sym_idx];
             let style =
-                if actual_index == app.selected_symbol_pos && app.focus == FocusPane::Symbols {
+                if actual_index == app.symbols.selected_pos && app.focus == FocusPane::Symbols {
                     selection_style()
                 } else {
                     Style::default()
