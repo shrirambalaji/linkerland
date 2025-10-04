@@ -3,14 +3,24 @@ use std::collections::HashMap;
 use linkerland_parser::{MapFile, Section};
 use serde::Serialize;
 
+/// Memory section classification category.
+///
+/// Categorizes sections into standard memory types for analysis.
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 pub enum Bucket {
+    /// Executable code sections (e.g., `__TEXT/__text`, `.text`)
     Text,
+    /// Initialized data sections (e.g., `__DATA/__data`, `.data`)
     Data,
+    /// Uninitialized data sections (e.g., `__DATA/__bss`, `.bss`)
     Bss,
+    /// Other/misc sections (e.g., debug info, metadata)
     Other,
 }
 
+/// Aggregated metrics for a single object file.
+///
+/// Contains size breakdowns by section type for one object file.
 #[derive(Debug, Serialize, Clone)]
 pub struct ObjectMetrics {
     pub id: i32,
@@ -22,6 +32,9 @@ pub struct ObjectMetrics {
     pub total: u64,
 }
 
+/// Metrics for a single symbol with section classification.
+///
+/// Associates a symbol with its size, address, and memory bucket.
 #[derive(Debug, Serialize, Clone)]
 pub struct SymbolMetrics {
     pub address: u64,
@@ -31,6 +44,9 @@ pub struct SymbolMetrics {
     pub bucket: Bucket,
 }
 
+/// Global totals across all objects and symbols.
+///
+/// Aggregates total sizes for each section type across the entire binary.
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct GlobalTotals {
     pub text: u64,
@@ -40,6 +56,9 @@ pub struct GlobalTotals {
     pub total: u64,
 }
 
+/// Complete metrics analysis result.
+///
+/// Contains per-object, per-symbol, and global aggregate metrics.
 #[derive(Debug, Serialize, Clone)]
 pub struct Metrics {
     pub objects: Vec<ObjectMetrics>,

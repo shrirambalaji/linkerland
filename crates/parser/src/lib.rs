@@ -11,6 +11,9 @@ use winnow::{
     Parser, Result as ParserResult,
 };
 
+/// A symbol entry from the linker map file.
+///
+/// Represents a single symbol with its address, size, source object file, and name.
 #[derive(Debug, Serialize)]
 pub struct Symbol {
     pub address: String,
@@ -19,6 +22,10 @@ pub struct Symbol {
     pub name: String,
 }
 
+/// A memory section entry from the linker map file.
+///
+/// Represents a contiguous memory region with segment and section classifications
+/// (e.g., `__TEXT/__text` for Mach-O or `.text/.text` for ELF).
 #[derive(Debug, Serialize)]
 pub struct Section {
     pub address: String,
@@ -49,14 +56,21 @@ impl MapFileHeaders {
     }
 }
 
+/// Binary executable format detected from the linker map.
+///
+/// Identifies whether the binary is Mach-O (macOS/iOS), ELF (Linux/BSD), or unknown.
 #[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
 pub enum BinaryFormat {
+    /// Mach-O format (macOS, iOS) - sections prefixed with `__`
     MachO,
+    /// ELF format (Linux, BSD) - sections prefixed with `.`
     Elf,
+    /// Unknown or unsupported format
     Unknown,
 }
 
 impl BinaryFormat {
+    /// Returns the human-readable name of the binary format.
     pub fn as_str(&self) -> &'static str {
         match self {
             BinaryFormat::MachO => "Mach-O",
@@ -66,19 +80,31 @@ impl BinaryFormat {
     }
 }
 
+/// An object file entry from the linker map.
+///
+/// Represents a compiled object file or library that was linked into the final binary.
 #[derive(Debug, Serialize)]
 pub struct ObjectFile {
     pub index: i32,
     pub path: String,
 }
 
+/// The complete parsed linker map file.
+///
+/// Contains all symbols, sections, object files, and metadata from a linker map file.
 #[derive(Debug, Serialize)]
 pub struct MapFile {
+    /// Target architecture (e.g., "arm64", "x86_64")
     pub arch: String,
+    /// List of object files that were linked
     pub object_files: Vec<ObjectFile>,
+    /// Path to the output binary
     pub target_path: String,
+    /// All symbols defined in the binary
     pub symbols: Vec<Symbol>,
+    /// All memory sections in the binary
     pub sections: Vec<Section>,
+    /// Detected binary format
     pub binary_format: BinaryFormat,
 }
 
@@ -117,16 +143,21 @@ fn hex_value<'i>(input: &mut &'i str) -> ParserResult<&'i str> {
 
 /// Parse one object file line (e.g. `[ 66] /path/libunwind.tbd`).
 fn object_file(input: &mut &str) -> ParserResult<ObjectFile> {
-    (
+    let (index, path): (&str, &str) = (
         delimited('[', preceded(multispace0, digit1), ']'),
-        // Do NOT consume an optional preceding line_ending here; each object file line must start with '['
         preceded(multispace0, till_line_ending),
     )
-        .map(|(index, path): (&str, &str)| ObjectFile {
-            index: index.parse().unwrap(),
-            path: path.to_string(),
-        })
-        .parse_next(input)
+        .parse_next(input)?;
+
+    // Parse the index; digit1 ensures it's valid digits
+    let index_num = index
+        .parse()
+        .expect("digit1 parser guarantees valid integer");
+
+    Ok(ObjectFile {
+        index: index_num,
+        path: path.to_string(),
+    })
 }
 
 /// Parse entire object files block after `# Object files:` until next header.
@@ -147,25 +178,21 @@ fn object_files(input: &mut &str) -> ParserResult<Vec<ObjectFile>> {
 
 /// Parse one symbol row (e.g. `0xADDR\t0xSIZE\t[  1] name`).
 fn symbol(input: &mut &str) -> ParserResult<Symbol> {
-    let address = preceded(multispace0, hex_value).parse_next(input);
-    let size = preceded(multispace0, hex_value).parse_next(input);
+    let address = preceded(multispace0, hex_value).parse_next(input)?;
+    let size = preceded(multispace0, hex_value).parse_next(input)?;
     let file_index = preceded(
         preceded(opt(line_ending), spaces),
         delimited('[', preceded(multispace0, digit1), ']'),
     )
-    .parse_next(input);
-    let name = preceded(spaces, till_line_ending).parse_next(input);
-    let symbol_addr = address.unwrap().to_string();
-    let symbol_size = size.unwrap().to_string();
+    .parse_next(input)?;
+    let name = preceded(spaces, till_line_ending).parse_next(input)?;
 
-    let symbol = Symbol {
-        address: symbol_addr,
-        size: symbol_size,
-        file_index: file_index.unwrap().to_string(),
-        name: name.unwrap().to_string(),
-    };
-
-    Ok(symbol)
+    Ok(Symbol {
+        address: address.to_string(),
+        size: size.to_string(),
+        file_index: file_index.to_string(),
+        name: name.to_string(),
+    })
 }
 
 /// Parse consecutive symbol rows until header or EOF.
@@ -200,16 +227,16 @@ fn parse_segment_or_section<'a>(i: &mut &'a str) -> ParserResult<&'a str> {
 
 /// Parse one section row (e.g. `0xADDR\t0xSIZE\t__SEG\t__sect`).
 fn section(input: &mut &str) -> ParserResult<Section> {
-    let address = preceded(multispace0, hex_value).parse_next(input);
-    let size = preceded(multispace0, hex_value).parse_next(input);
+    let address = preceded(multispace0, hex_value).parse_next(input)?;
+    let size = preceded(multispace0, hex_value).parse_next(input)?;
     spaces.parse_next(input)?;
     let segment_name = parse_segment_or_section.parse_next(input)?;
     spaces.parse_next(input)?;
     let section_name = parse_segment_or_section.parse_next(input)?;
 
     Ok(Section {
-        address: address.unwrap().to_string(),
-        size: size.unwrap().to_string(),
+        address: address.to_string(),
+        size: size.to_string(),
         segment: segment_name.to_string(),
         section: section_name.to_string(),
     })

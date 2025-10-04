@@ -101,7 +101,6 @@ enum ExportFormat {
 fn main() {
     let cli = Cli::parse();
 
-    // If a single positional .map file is supplied and no subcommand -> launch viz TUI
     if let (Some(mapfile), None) = (&cli.mapfile, &cli.command) {
         run_viz(VizArgs {
             mapfile: mapfile.clone(),
@@ -114,10 +113,13 @@ fn main() {
 
     match cli.command {
         Some(Commands::Viz(args)) => run_viz(args),
-        Some(Commands::Export(args)) => run_export(args).expect("export failed"),
-        None => {
-            // clap's arg_required_else_help handles empty invocation
+        Some(Commands::Export(args)) => {
+            if let Err(e) = run_export(args) {
+                eprintln!("Error: Failed to export symbols: {}", e);
+                std::process::exit(1);
+            }
         }
+        None => {}
     }
 }
 
